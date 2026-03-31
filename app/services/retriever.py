@@ -1,3 +1,5 @@
+import json
+
 import asyncpg
 
 from app.exceptions import DatabaseOperationError
@@ -58,7 +60,9 @@ class RetrieverService:
             {
                 "product_id": str(row["product_id"]),
                 "chunk_text": row["chunk_text"],
-                "metadata": row["metadata"] or {},
+                "metadata": json.loads(row["metadata"])
+                if isinstance(row["metadata"], str)
+                else (row["metadata"] or {}),
                 "score": float(row["score"]),
             }
             for row in rows
