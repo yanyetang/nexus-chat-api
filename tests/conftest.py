@@ -6,7 +6,6 @@ import pytest
 
 # Provide placeholder env vars so the app can be imported without a real .env
 _TEST_ENV = {
-    "SUPABASE_URL": "https://placeholder.supabase.co",
     "DATABASE_URL": "postgresql://placeholder:placeholder@localhost:5432/placeholder",
     "SUPPLIER_API_BASE_URL": "https://placeholder.example.com",
     "COHERE_API_KEY": "placeholder",

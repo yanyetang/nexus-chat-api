@@ -2,7 +2,7 @@
 
 A FastAPI backend that powers product-focused chat and search for the dropship platform.
 
-It keeps the existing supplier API unchanged, ingests product catalog data, stores vector embeddings in Supabase (pgvector), and serves:
+It keeps the existing supplier API unchanged, ingests product catalog data, stores vector embeddings in Neon PostgreSQL (pgvector), and serves:
 
 - `POST /ingest` for indexing products
 - `GET /search` for hybrid retrieval
@@ -20,7 +20,7 @@ It keeps the existing supplier API unchanged, ingests product catalog data, stor
 - **Embedding service (Cohere)**
   - Uses `embed-multilingual-v3.0`
   - `search_document` for indexing, `search_query` for retrieval
-- **Supabase PostgreSQL + pgvector**
+- **Neon PostgreSQL + pgvector**
   - Stores product chunks and embeddings
   - Stores chat session history
 - **OpenRouter LLM service**
@@ -46,7 +46,7 @@ sequenceDiagram
     participant API as chatbot-api (FastAPI)
     participant Supplier as dropship-supplier-api
     participant Cohere as Cohere Embedding API
-    participant DB as Supabase Postgres (pgvector)
+    participant DB as Neon Postgres (pgvector)
 
     Client->>API: POST /ingest (Bearer CHATBOT_API_KEY)
     API->>Supplier: GET /catalog/export
@@ -73,7 +73,7 @@ sequenceDiagram
     participant FE as dropship-application
     participant API as chatbot-api (FastAPI)
     participant Cohere as Cohere Embedding API
-    participant DB as Supabase Postgres (pgvector + chat_sessions)
+    participant DB as Neon Postgres (pgvector + chat_sessions)
     participant OR as OpenRouter LLM
 
     User->>FE: Ask a product question
@@ -104,7 +104,7 @@ sequenceDiagram
   participant FE as Frontend or API Client
   participant API as chatbot-api (FastAPI)
   participant Cohere as Cohere Embedding API
-  participant DB as Supabase Postgres (pgvector + FTS)
+  participant DB as Neon Postgres (pgvector + FTS)
 
   FE->>API: GET /search?q=<query>&limit=<n>
   API->>Cohere: embed(query, input_type=search_query)
@@ -126,7 +126,7 @@ sequenceDiagram
   participant FE as Frontend or API Client
   participant API as chatbot-api (FastAPI)
   participant Cohere as Cohere Embedding API
-  participant DB as Supabase Postgres
+  participant DB as Neon Postgres
   participant OR as OpenRouter LLM
 
   FE->>API: Request (/search or /chat)
@@ -186,8 +186,6 @@ chatbot-api/
 Set environment values in `.env`:
 
 - `DATABASE_URL`
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPPLIER_API_BASE_URL`
 - `COHERE_API_KEY`
 - `OPENROUTER_API_KEY`
@@ -231,4 +229,4 @@ curl http://localhost:8000/health
 ## Notes
 
 - Supplier API remains independent and is not modified by this project.
-- Current implementation is designed for the existing Supabase project and can be migrated later by changing environment values and re-running ingestion.
+- Current implementation uses PostgreSQL + pgvector and can run on Neon by setting `DATABASE_URL`, applying schema SQL, and re-running ingestion.
