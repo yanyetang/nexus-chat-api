@@ -2,11 +2,10 @@
   "servers": {
     "postgres": {
       "type": "stdio",
-      "command": "npx",
+      "command": "zsh",
       "args": [
-        "-y",
-        "@modelcontextprotocol/server-postgres",
-        "${env:DATABASE_URL}"
+        "-lc",
+        "set -a; source /Users/yanyetang/Projects/chatbot-api/.env; set +a; exec docker run -i --rm mcp/postgres \"$DATABASE_URL\""
       ]
     }
   }

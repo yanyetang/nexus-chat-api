@@ -1,3 +1,5 @@
+import json
+
 import asyncpg
 from fastapi import APIRouter, Header, HTTPException, status
 
@@ -59,7 +61,7 @@ async def ingest_catalog(authorization: str | None = Header(default=None)) -> In
                     "brand": product.get("brand"),
                     "category": (product.get("category") or {}).get("title"),
                 }
-                await conn.execute(sql, product_id, chunk, vector, metadata)
+                await conn.execute(sql, product_id, chunk, vector, json.dumps(metadata))
     except asyncpg.PostgresError as exc:
         raise HTTPException(status_code=500, detail="Failed to persist embeddings") from exc
 
