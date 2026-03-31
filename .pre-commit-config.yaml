@@ -6,26 +6,22 @@ repos:
         entry: .venv/bin/ruff check
         language: system
         types: [python]
-        stages: [commit]
 
       - id: ruff-format
         name: ruff format
         entry: .venv/bin/ruff format
         language: system
         types: [python]
-        stages: [commit]
 
       - id: pyright
         name: pyright type-check
         entry: .venv/bin/pyright --pythonpath .venv/bin/python
         language: system
         types: [python]
-        stages: [commit]
 
       - id: pytest
         name: pytest
         entry: .venv/bin/pytest tests/ -q
         language: system
         types: [python]
-        stages: [commit]
         pass_filenames: false
