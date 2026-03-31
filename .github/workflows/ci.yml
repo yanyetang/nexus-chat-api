@@ -30,7 +30,6 @@ jobs:
       - name: Import smoke test
         run: python -c "from app.main import app; print('app-loaded')"
         env:
-          SUPABASE_URL: https://placeholder.supabase.co
           DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
           SUPPLIER_API_BASE_URL: https://placeholder.example.com
           COHERE_API_KEY: placeholder
@@ -39,7 +38,6 @@ jobs:
       - name: Tests
         run: pytest tests/ -v
         env:
-          SUPABASE_URL: https://placeholder.supabase.co
           DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
           SUPPLIER_API_BASE_URL: https://placeholder.example.com
           COHERE_API_KEY: placeholder
