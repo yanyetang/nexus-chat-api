@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     chatbot_api_key: str | None = Field(default=None, validation_alias="CHATBOT_API_KEY")
     openrouter_model: str = Field(
-        default="google/gemini-2.0-flash", validation_alias="OPENROUTER_MODEL"
+        default="google/gemini-2.0-flash-001", validation_alias="OPENROUTER_MODEL"
     )
     allowed_origins: str = Field(default="*", validation_alias="ALLOWED_ORIGINS")
 
