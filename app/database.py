@@ -1,5 +1,3 @@
-from collections.abc import AsyncIterator
-
 import asyncpg
 from pgvector.asyncpg import register_vector
 
@@ -36,9 +34,3 @@ def get_pool() -> asyncpg.Pool:
     if _pool is None:
         raise RuntimeError("Database pool is not initialized. Call init_db first.")
     return _pool
-
-
-async def acquire_connection() -> AsyncIterator[asyncpg.Connection]:
-    pool = get_pool()
-    async with pool.acquire() as conn:
-        yield conn

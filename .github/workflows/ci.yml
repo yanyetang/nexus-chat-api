@@ -25,7 +25,7 @@ jobs:
         run: ruff check app
 
       - name: Type check
-        run: pyright app
+        run: pyright --pythonpath "$(which python)" app
 
       - name: Import smoke test
         run: python -c "from app.main import app; print('app-loaded')"
