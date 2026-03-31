@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 
 import cohere
 
@@ -34,6 +34,15 @@ class EmbeddingService:
                 )
             except Exception as exc:
                 raise ExternalServiceError("Embedding provider unavailable") from exc
-            vectors.extend(response.embeddings.float)
+
+            embedding_payload: Any = response.embeddings
+            float_vectors = getattr(embedding_payload, "float", None)
+            if float_vectors is None and isinstance(embedding_payload, list):
+                float_vectors = embedding_payload
+
+            if not isinstance(float_vectors, list):
+                raise ExternalServiceError("Embedding provider returned unexpected format")
+
+            vectors.extend([list(vec) for vec in float_vectors])
 
         return vectors
