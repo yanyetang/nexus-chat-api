@@ -1,232 +1,124 @@
 # Chatbot API (Python RAG Backend)
 
-A FastAPI backend that powers product-focused chat and search for the dropship platform.
+FastAPI backend for product-grounded search and chat over a supplier catalog.
 
-It keeps the existing supplier API unchanged, ingests product catalog data, stores vector embeddings in Neon PostgreSQL (pgvector), and serves:
+## What is Implemented
 
-- `POST /ingest` for indexing products
-- `GET /search` for hybrid retrieval
-- `POST /chat` for streaming RAG responses (SSE)
+- Hybrid retrieval with vector + PostgreSQL FTS candidate generation
+- Similarity threshold gating on retrieval scores
+- Cohere reranking (`rerank-multilingual-v3.0`) for final ordering
+- Live inventory enrichment after retrieval (fresh stock/price snapshot)
+- Embedding failure fallback to keyword-only retrieval
+- Async ingest jobs (`POST /ingest`) with job polling (`GET /ingest/{job_id}/status`)
+- DB bootstrap for `TSVECTOR` maintenance trigger + GIN index + IVFFlat vector index
+- DeepEval harness and nightly/PR workflow
+- DSPy optimization scaffold with offline artifact generation and startup artifact load
 
-## Project Architecture
+## Core Workflows
 
-### High-Level Components
+### Ingest (Background)
 
-- **FastAPI application**
-  - API routers for ingest, search, and chat
-  - Startup lifecycle initializes async database pool
-- **Supplier API integration**
-  - Reads products from supplier API `GET /catalog/export`
-- **Embedding service (Cohere)**
-  - Uses `embed-multilingual-v3.0`
-  - `search_document` for indexing, `search_query` for retrieval
-- **Neon PostgreSQL + pgvector**
-  - Stores product chunks and embeddings
-  - Stores chat session history
-- **OpenRouter LLM service**
-  - Streams chat completions for final user responses
-- **Hybrid retriever**
-  - Combines vector similarity and PostgreSQL full-text search with RRF scoring
+1. Client calls `POST /ingest`
+2. API returns `202` with `job_id`
+3. Background task fetches supplier catalog, chunks text, embeds in batches, and upserts `product_embeddings`
+4. Client polls `GET /ingest/{job_id}/status`
 
-### Data Stores
+### Search
 
-- `public.product_embeddings`
-  - `product_id`, `chunk_text`, `embedding vector(1024)`, `metadata`, timestamps
-- `public.chat_sessions`
-  - `session_id`, `messages jsonb`, timestamps
+1. Embed query (or fallback to keyword-only retrieval when embeddings fail)
+2. Run hybrid candidate retrieval (semantic + FTS) with optional metadata filters
+3. Apply threshold gating
+4. Return ranked JSON results
 
-## Main Workflows (Mermaid Sequence Charts)
+### Chat
 
-### 1) Product Ingestion Workflow
+1. Load prior session messages
+2. Retrieve candidates using hybrid search with fallback and filters
+3. Rerank candidates with Cohere cross-encoder
+4. Enrich retrieved chunks with live supplier stock/price
+5. Stream answer via SSE (`sources` -> `token*` -> `done`)
+6. Persist updated chat history
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Client as Admin/Job Trigger
-    participant API as chatbot-api (FastAPI)
-    participant Supplier as dropship-supplier-api
-    participant Cohere as Cohere Embedding API
-    participant DB as Neon Postgres (pgvector)
+## Database Bootstrap
 
-    Client->>API: POST /ingest (Bearer CHATBOT_API_KEY)
-    API->>Supplier: GET /catalog/export
-    Supplier-->>API: Product catalog (products + variants)
+Startup runs automatic bootstrap (enabled by default):
 
-    loop Batch chunks (up to 96 texts)
-        API->>Cohere: embed(texts, input_type=search_document)
-        Cohere-->>API: Embedding vectors (1024-d)
-    end
+- Creates `product_embeddings` and `chat_sessions` if missing
+- Adds `content_tsv` column on `product_embeddings`
+- Creates trigger `trg_product_embeddings_tsv` to maintain `content_tsv`
+- Creates GIN index on `content_tsv`
+- Creates IVFFlat index on vector column:
 
-    loop Upsert each product
-        API->>DB: INSERT ... ON CONFLICT(product_id) DO UPDATE
-    end
-
-    API-->>Client: { indexed, total }
+```sql
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_product_embeddings_vector
+  ON product_embeddings USING ivfflat (embedding vector_cosine_ops)
+  WITH (lists = 100);
 ```
 
-### 2) Chat RAG Workflow
+Manual SQL bootstrap is also available at `scripts/init_db.sql`.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant User as Frontend User
-    participant FE as dropship-application
-    participant API as chatbot-api (FastAPI)
-    participant Cohere as Cohere Embedding API
-    participant DB as Neon Postgres (pgvector + chat_sessions)
-    participant OR as OpenRouter LLM
+## API Endpoints
 
-    User->>FE: Ask a product question
-    FE->>API: POST /chat (session_id, message)
-
-    API->>DB: Load chat_sessions by session_id
-    DB-->>API: Previous messages
-
-    API->>Cohere: embed(query, input_type=search_query)
-    Cohere-->>API: Query embedding
-
-    API->>DB: Hybrid search (vector + FTS + RRF)
-    DB-->>API: Top relevant product chunks
-
-    API->>OR: Stream completion with context + history
-    OR-->>API: Token stream
-    API-->>FE: SSE events (sources, token, done)
-
-    API->>DB: Upsert chat session with new assistant reply
-    DB-->>API: OK
-```
-
-### 3) Search-Only Workflow (`GET /search`)
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant FE as Frontend or API Client
-  participant API as chatbot-api (FastAPI)
-  participant Cohere as Cohere Embedding API
-  participant DB as Neon Postgres (pgvector + FTS)
-
-  FE->>API: GET /search?q=<query>&limit=<n>
-  API->>Cohere: embed(query, input_type=search_query)
-  Cohere-->>API: Query embedding (1024-d)
-
-  API->>DB: Semantic search (embedding cosine distance)
-  API->>DB: Keyword search (PostgreSQL FTS)
-  API->>DB: Reciprocal Rank Fusion (RRF)
-  DB-->>API: Ranked product chunks + scores
-
-  API-->>FE: JSON results [{ product_id, chunk_text, metadata, score }]
-```
-
-### 4) Failure Paths (Operational)
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant FE as Frontend or API Client
-  participant API as chatbot-api (FastAPI)
-  participant Cohere as Cohere Embedding API
-  participant DB as Neon Postgres
-  participant OR as OpenRouter LLM
-
-  FE->>API: Request (/search or /chat)
-
-  alt Cohere timeout/error
-    API-->>FE: 502 Bad Gateway (embedding provider unavailable)
-  else Embedding succeeds
-    API->>DB: Retrieval and/or session query
-    alt DB query failure
-      API-->>FE: 500 Internal Server Error
-    else No matching products
-      API-->>FE: 200 with empty results (/search)
-      API-->>FE: SSE response with "no strong match" guidance (/chat)
-    else Retrieval succeeds
-      API->>OR: Chat completion request (for /chat)
-      alt LLM timeout/error
-        API-->>FE: SSE error event then done
-      else LLM succeeds
-        API-->>FE: Normal token stream or JSON response
-      end
-    end
-  end
-```
-
-## Repository Structure
-
-```text
-chatbot-api/
-├── app/
-│   ├── main.py
-│   ├── config.py
-│   ├── database.py
-│   ├── models/
-│   │   └── schemas.py
-│   ├── routers/
-│   │   ├── ingest.py
-│   │   ├── search.py
-│   │   └── chat.py
-│   ├── services/
-│   │   ├── supplier.py
-│   │   ├── embeddings.py
-│   │   ├── retriever.py
-│   │   ├── llm.py
-│   │   └── rag.py
-│   └── utils/
-│       ├── chunking.py
-│       └── prompts.py
-├── .vscode/mcp.json
-├── .env.example
-├── requirements.txt
-├── Procfile
-└── runtime.txt
-```
+- `GET /health`
+- `POST /ingest` -> `202 { job_id, status }`
+- `GET /ingest/{job_id}/status` -> `{ job_id, status, indexed, total, error }`
+- `GET /search?q=...&limit=...&category=...&brand=...&min_price=...&max_price=...`
+- `POST /search/query`
+  - Body: `{ "query": "...", "limit": 5, "filters": { ... } }`
+- `POST /chat`
+  - Body: `{ "session_id": "...", "message": "...", "locale": "en", "filters": { ... } }`
 
 ## Configuration
 
-Set environment values in `.env`:
+Required:
 
 - `DATABASE_URL`
 - `SUPPLIER_API_BASE_URL`
 - `COHERE_API_KEY`
 - `OPENROUTER_API_KEY`
+
+Optional:
+
 - `CHATBOT_API_KEY`
-- `OPENROUTER_MODEL` (optional, default `openai/gpt-4o-mini`)
-- `ALLOWED_ORIGINS` (optional, default `*`)
+- `OPENROUTER_MODEL` (default `google/gemini-2.0-flash-001`)
+- `ALLOWED_ORIGINS` (default `*`)
+- `RETRIEVAL_MIN_SCORE` (default `0.3`)
+- `RETRIEVAL_CANDIDATE_LIMIT` (default `20`)
+- `COHERE_RERANK_ENABLED` (default `true`)
+- `COHERE_RERANK_TOP_N` (default `5`)
+- `DB_AUTO_BOOTSTRAP` (default `true`)
 
-## Run Locally
+## Evaluation and Optimization
 
-1. Install dependencies:
+- DeepEval suite: `tests/eval/test_rag_quality.py`
+- Golden dataset: `tests/eval/golden_dataset.json`
+- CI workflow: `.github/workflows/eval.yml`
+- Offline optimization script: `scripts/run_optimization.py`
+- Runtime artifact load path: `artifacts/optimized_pipeline.json`
+
+Run evaluation:
 
 ```bash
-python -m pip install -r requirements.txt
+pytest tests/eval -m deepeval -q
 ```
 
-2. Start API:
+Generate optimization artifact:
 
 ```bash
-uvicorn app.main:app --reload
+python scripts/run_optimization.py
 ```
 
-3. Health check:
+## Local Development
 
 ```bash
-curl http://localhost:8000/health
+make install
+make dev
 ```
 
-## API Endpoints
+Quality checks:
 
-- `GET /health`
-  - Service health check
-- `POST /ingest`
-  - Pulls supplier catalog and writes embeddings into `product_embeddings`
-  - Requires `Authorization: Bearer <CHATBOT_API_KEY>` when key is configured
-- `GET /search?q=...&limit=5`
-  - Hybrid product retrieval
-- `POST /chat`
-  - SSE streaming RAG response
-  - Body: `{ "session_id": "...", "message": "...", "locale": "en" }`
-
-## Notes
-
-- Supplier API remains independent and is not modified by this project.
-- Current implementation uses PostgreSQL + pgvector and can run on Neon by setting `DATABASE_URL`, applying schema SQL, and re-running ingestion.
+```bash
+make lint
+make type-check
+make test
+```

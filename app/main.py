@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import close_db, init_db
+from app.optimization import load_optimized_artifact
 from app.routers.chat import router as chat_router
 from app.routers.ingest import router as ingest_router
 from app.routers.search import router as search_router
@@ -13,6 +14,7 @@ from app.routers.search import router as search_router
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await init_db()
+    load_optimized_artifact()
     yield
     await close_db()
 

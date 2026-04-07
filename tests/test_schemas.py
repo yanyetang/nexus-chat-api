@@ -3,7 +3,14 @@
 import pytest
 from pydantic import ValidationError
 
-from app.models.schemas import ChatRequest, IngestResponse, SearchResponse, SearchResult
+from app.models.schemas import (
+    ChatRequest,
+    IngestResponse,
+    RetrievalFilters,
+    SearchRequest,
+    SearchResponse,
+    SearchResult,
+)
 
 
 def test_chat_request_valid():
@@ -35,3 +42,22 @@ def test_search_response_empty():
 def test_ingest_response():
     resp = IngestResponse(indexed=145, total=145)
     assert resp.indexed == 145
+
+
+def test_search_request_with_filters_valid():
+    req = SearchRequest(
+        query="running shoes",
+        filters=RetrievalFilters(category="Footwear", min_price=10, max_price=120),
+    )
+    assert req.filters is not None
+    assert req.filters.category == "Footwear"
+
+
+def test_chat_request_filters_valid():
+    req = ChatRequest(
+        session_id="s1",
+        message="show acme products",
+        filters=RetrievalFilters(brand="Acme"),
+    )
+    assert req.filters is not None
+    assert req.filters.brand == "Acme"

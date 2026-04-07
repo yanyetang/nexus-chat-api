@@ -1,7 +1,5 @@
 """Shared test fixtures and configuration."""
 
-import os
-
 import pytest
 
 # Provide placeholder env vars so the app can be imported without a real .env

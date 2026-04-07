@@ -18,6 +18,11 @@ class Settings(BaseSettings):
         default="google/gemini-2.0-flash-001", validation_alias="OPENROUTER_MODEL"
     )
     allowed_origins: str = Field(default="*", validation_alias="ALLOWED_ORIGINS")
+    retrieval_min_score: float = Field(default=0.3, validation_alias="RETRIEVAL_MIN_SCORE")
+    retrieval_candidate_limit: int = Field(default=20, validation_alias="RETRIEVAL_CANDIDATE_LIMIT")
+    cohere_rerank_enabled: bool = Field(default=True, validation_alias="COHERE_RERANK_ENABLED")
+    cohere_rerank_top_n: int = Field(default=5, validation_alias="COHERE_RERANK_TOP_N")
+    db_auto_bootstrap: bool = Field(default=True, validation_alias="DB_AUTO_BOOTSTRAP")
 
 
 @lru_cache
