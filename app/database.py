@@ -59,10 +59,7 @@ async def _bootstrap_schema(pool: asyncpg.Pool) -> None:
         CREATE INDEX IF NOT EXISTS idx_product_embeddings_tsv
             ON product_embeddings USING GIN (content_tsv)
         """,
-        """
-        CREATE INDEX IF NOT EXISTS idx_product_embeddings_product_id
-            ON product_embeddings (product_id)
-        """,
+        "DROP INDEX IF EXISTS idx_product_embeddings_product_id",
     ]
 
     try:
