@@ -96,7 +96,14 @@ class RAGService:
             selected["retrieval_score"] = selected.get("score", 0.0)
             selected["score"] = score
             output.append(selected)
-        return output or results
+
+        if not output:
+            return results
+
+        filtered = [
+            item for item in output if item["score"] >= self._settings.cohere_rerank_min_score
+        ]
+        return filtered if filtered else output
 
     async def get_context(
         self,

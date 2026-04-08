@@ -1,0 +1,17 @@
+.venv/
+.env
+.env.*
+__pycache__/
+*.py[cod]
+tests/
+.github/
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+pyrightconfig.json
+ruff.toml
+README.md
+CLAUDE.md
+Makefile
+docker-compose.yml
+Dockerfile
