@@ -63,21 +63,23 @@ class RetrieverService:
         filters: dict | None = None,
         candidate_limit: int = 20,
     ) -> list[dict]:
-        filter_predicates, filter_values, next_param = self._build_filter_predicates(
-            filters,
-            param_offset=3,
-        )
-        semantic_filter_clause = (
-            f"WHERE {' AND '.join(filter_predicates)}" if filter_predicates else ""
-        )
-        keyword_where_predicates = [
-            *filter_predicates,
-            "content_tsv @@ plainto_tsquery('english', $3)",
-        ]
-        keyword_filter_clause = f"WHERE {' AND '.join(keyword_where_predicates)}"
-
         uses_semantic = bool(query_embedding)
         if uses_semantic:
+            # $1=embedding  $2=candidate_limit  $3=query_text  $4=cosine_min_score  $5+=filter_values  $n=k  $n+1=limit
+            filter_predicates, filter_values, next_param = self._build_filter_predicates(
+                filters,
+                param_offset=5,
+            )
+            semantic_where_predicates = [
+                "(1 - (embedding <=> $1)) >= $4",
+                *filter_predicates,
+            ]
+            semantic_filter_clause = f"WHERE {' AND '.join(semantic_where_predicates)}"
+            keyword_where_predicates = [
+                *filter_predicates,
+                "content_tsv @@ plainto_tsquery('english', $3)",
+            ]
+            keyword_filter_clause = f"WHERE {' AND '.join(keyword_where_predicates)}"
             sql = f"""
             WITH semantic_search AS (
                 SELECT
@@ -120,11 +122,17 @@ class RetrieverService:
                 query_embedding,
                 candidate_limit,
                 query_text,
+                min_score,
                 *filter_values,
                 k,
                 limit,
             ]
         else:
+            # $1=query_text  $2=candidate_limit  $3+=filter_values  $n=limit
+            filter_predicates, filter_values, next_param = self._build_filter_predicates(
+                filters,
+                param_offset=3,
+            )
             keyword_only_where_predicates = [
                 *filter_predicates,
                 "content_tsv @@ plainto_tsquery('english', $1)",
@@ -165,4 +173,4 @@ class RetrieverService:
             }
             for row in rows
         ]
-        return [item for item in output if item["score"] >= min_score]
+        return output

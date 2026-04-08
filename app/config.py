@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     retrieval_candidate_limit: int = Field(default=20, validation_alias="RETRIEVAL_CANDIDATE_LIMIT")
     cohere_rerank_enabled: bool = Field(default=True, validation_alias="COHERE_RERANK_ENABLED")
     cohere_rerank_top_n: int = Field(default=5, validation_alias="COHERE_RERANK_TOP_N")
+    cohere_rerank_min_score: float = Field(default=0.1, validation_alias="COHERE_RERANK_MIN_SCORE")
     db_auto_bootstrap: bool = Field(default=True, validation_alias="DB_AUTO_BOOTSTRAP")
 
 
