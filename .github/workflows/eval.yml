@@ -32,6 +32,8 @@ jobs:
         run: deepeval login --api-key "${{ secrets.DEEPEVAL_API_KEY }}"
 
       - name: Run RAG evaluation suite
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: pytest tests/eval -m deepeval -q
 
       - name: PR summary
