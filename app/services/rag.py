@@ -25,7 +25,9 @@ class RAGService:
         for variant in variants[:8]:
             title = str(variant.get("title") or "Unknown").strip()
             price = str(variant.get("price") or "N/A").strip()
-            stock = str(variant.get("inventory") or variant.get("inventoryQty") or "N/A").strip()
+            inventory = variant.get("inventory")
+            stock_value = inventory if inventory is not None else variant.get("inventoryQty")
+            stock = str(stock_value if stock_value is not None else "N/A").strip()
             rows.append(f"- {title}: ${price} (stock: {stock})")
 
         return "Live stock/price:\n" + "\n".join(rows)
