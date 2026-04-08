@@ -1,0 +1,17 @@
+[
+  {
+    "input": "I need a lightweight summer t-shirt under $25",
+    "expected_output": "Recommend lightweight t-shirt options with price and stock details.",
+    "expected_product_ids": ["tee-101", "tee-204"]
+  },
+  {
+    "input": "Show me black running shoes in stock",
+    "expected_output": "List black running shoes and mention available variants in stock.",
+    "expected_product_ids": ["shoe-302", "shoe-499"]
+  },
+  {
+    "input": "Compare backpacks for travel around $60",
+    "expected_output": "Compare travel backpacks with pricing and key features.",
+    "expected_product_ids": ["bag-901", "bag-114"]
+  }
+]

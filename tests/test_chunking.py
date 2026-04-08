@@ -2,7 +2,6 @@
 
 from app.utils.chunking import product_to_chunk
 
-
 _SAMPLE_PRODUCT = {
     "id": "prod-1",
     "title": "Unisex Staple T-Shirt",

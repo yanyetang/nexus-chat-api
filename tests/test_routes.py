@@ -66,14 +66,46 @@ def test_search_returns_results(mock_pool, mock_retriever_cls, mock_embedding_cl
 
 @patch("app.routers.search.EmbeddingService")
 @patch("app.routers.search.get_pool")
-def test_search_502_on_embedding_failure(mock_pool, mock_embedding_cls):
+@patch("app.routers.search.RetrieverService")
+def test_search_falls_back_when_embedding_fails(mock_retriever_cls, mock_pool, mock_embedding_cls):
     from app.exceptions import ExternalServiceError
 
     mock_embedding_cls.return_value.embed_texts = AsyncMock(
         side_effect=ExternalServiceError("Embedding provider unavailable")
     )
+    mock_retriever_cls.return_value.hybrid_search = AsyncMock(return_value=[])
     mock_pool.return_value = MagicMock()
 
     resp = client.get("/search?q=shirt")
-    assert resp.status_code == 502
-    assert "Embedding provider unavailable" in resp.json()["detail"]
+    assert resp.status_code == 200
+    assert resp.json() == {"results": []}
+
+
+@patch("app.routers.search.EmbeddingService")
+@patch("app.routers.search.RetrieverService")
+@patch("app.routers.search.get_pool")
+def test_search_post_query_with_filters(mock_pool, mock_retriever_cls, mock_embedding_cls):
+    mock_embedding_cls.return_value.embed_texts = AsyncMock(return_value=[[0.1] * 1024])
+    mock_retriever_cls.return_value.hybrid_search = AsyncMock(
+        return_value=[
+            {
+                "product_id": "prod-2",
+                "chunk_text": "Product: Hoodie",
+                "metadata": {"title": "Hoodie", "brand": "Acme"},
+                "score": 0.82,
+            }
+        ]
+    )
+    mock_pool.return_value = MagicMock()
+
+    resp = client.post(
+        "/search/query",
+        json={
+            "query": "acme hoodie",
+            "limit": 5,
+            "filters": {"brand": "Acme", "max_price": 99},
+        },
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["results"][0]["product_id"] == "prod-2"

@@ -46,3 +46,37 @@ class EmbeddingService:
             vectors.extend([list(vec) for vec in float_vectors])
 
         return vectors
+
+    async def rerank(
+        self,
+        query: str,
+        documents: list[str],
+        top_n: int,
+    ) -> list[dict[str, float | int]]:
+        if not query or not documents:
+            return []
+
+        try:
+            response = self._client.rerank(
+                model="rerank-multilingual-v3.0",
+                query=query,
+                documents=documents,
+                top_n=top_n,
+            )
+        except Exception as exc:
+            raise ExternalServiceError("Rerank provider unavailable") from exc
+
+        ranked_items = getattr(response, "results", None)
+        if not isinstance(ranked_items, list):
+            raise ExternalServiceError("Rerank provider returned unexpected format")
+
+        output: list[dict[str, float | int]] = []
+        for item in ranked_items:
+            index = getattr(item, "index", None)
+            relevance_score = getattr(item, "relevance_score", None)
+            if not isinstance(index, int):
+                continue
+            if not isinstance(relevance_score, float):
+                continue
+            output.append({"index": index, "score": relevance_score})
+        return output

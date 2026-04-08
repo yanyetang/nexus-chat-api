@@ -18,7 +18,9 @@ def _format_sse(data: dict) -> dict:
 
 
 @router.post("")
-async def chat(payload: ChatRequest, authorization: str | None = Header(default=None)) -> EventSourceResponse:
+async def chat(
+    payload: ChatRequest, authorization: str | None = Header(default=None)
+) -> EventSourceResponse:
     settings = get_settings()
     if settings.chatbot_api_key:
         expected = f"Bearer {settings.chatbot_api_key}"
@@ -47,7 +49,15 @@ async def chat(payload: ChatRequest, authorization: str | None = Header(default=
     async def event_generator():
         response_text = ""
         try:
-            results = await rag.get_context(pool=pool, message=payload.message)
+            results, retrieval_info = await rag.get_context(
+                pool=pool,
+                message=payload.message,
+                filters=(
+                    payload.filters.model_dump(exclude_none=True) if payload.filters else None
+                ),
+            )
+            if retrieval_info:
+                yield _format_sse({"type": "info", "content": retrieval_info})
             if results:
                 sources = [
                     {
@@ -62,11 +72,13 @@ async def chat(payload: ChatRequest, authorization: str | None = Header(default=
                 yield _format_sse(
                     {
                         "type": "info",
-                        "content": "No strong product match found. I will respond with best-effort guidance.",
+                        "content": "No strong product match found in retrieval context.",
                     }
                 )
 
-            async for token in rag.stream_answer(history=history, message=payload.message, results=results):
+            async for token in rag.stream_answer(
+                history=history, message=payload.message, results=results
+            ):
                 response_text += token
                 yield _format_sse({"type": "token", "content": token})
         except ExternalServiceError as exc:
@@ -78,7 +90,11 @@ async def chat(payload: ChatRequest, authorization: str | None = Header(default=
             yield _format_sse({"type": "done"})
             return
 
-        updated_messages = [*history, {"role": "user", "content": payload.message}, {"role": "assistant", "content": response_text}]
+        updated_messages = [
+            *history,
+            {"role": "user", "content": payload.message},
+            {"role": "assistant", "content": response_text},
+        ]
         try:
             async with pool.acquire() as conn:
                 await conn.execute(
