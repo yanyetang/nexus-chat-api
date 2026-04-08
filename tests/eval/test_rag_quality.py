@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -11,30 +12,29 @@ def _load_golden_dataset() -> list[dict]:
 
 @pytest.mark.deepeval
 def test_rag_quality_contract() -> None:
-    deepeval_module = pytest.importorskip("deepeval")
-    assert_test = getattr(deepeval_module, "assert_test")
-    metrics_module = __import__(
-        "deepeval.metrics",
-        fromlist=[
-            "AnswerRelevancyMetric",
-            "ContextualPrecisionMetric",
-            "ContextualRecallMetric",
-            "FaithfulnessMetric",
-        ],
-    )
-    test_case_module = __import__("deepeval.test_case", fromlist=["LLMTestCase"])
+    pytest.importorskip("deepeval")
 
-    AnswerRelevancyMetric = getattr(metrics_module, "AnswerRelevancyMetric")
-    ContextualPrecisionMetric = getattr(metrics_module, "ContextualPrecisionMetric")
-    ContextualRecallMetric = getattr(metrics_module, "ContextualRecallMetric")
-    FaithfulnessMetric = getattr(metrics_module, "FaithfulnessMetric")
-    LLMTestCase = getattr(test_case_module, "LLMTestCase")
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    if not gemini_key:
+        pytest.skip("GEMINI_API_KEY not set — skipping DeepEval judge evaluation")
+
+    from deepeval import assert_test
+    from deepeval.metrics import (
+        AnswerRelevancyMetric,
+        ContextualPrecisionMetric,
+        ContextualRecallMetric,
+        FaithfulnessMetric,
+    )
+    from deepeval.models import GeminiModel
+    from deepeval.test_case import LLMTestCase
+
+    judge = GeminiModel(model="gemini-2.0-flash", api_key=gemini_key)
 
     metrics = [
-        ContextualPrecisionMetric(),
-        ContextualRecallMetric(),
-        FaithfulnessMetric(),
-        AnswerRelevancyMetric(),
+        ContextualPrecisionMetric(model=judge),
+        ContextualRecallMetric(model=judge),
+        FaithfulnessMetric(model=judge),
+        AnswerRelevancyMetric(model=judge),
     ]
 
     for sample in _load_golden_dataset():
