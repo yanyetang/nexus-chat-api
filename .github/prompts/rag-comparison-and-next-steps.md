@@ -4,25 +4,25 @@ _Analysis date: 2026-04-08_
 
 ## Architecture Overview
 
-| Dimension | `project-dropship` (TS/Next.js) | `chatbot-api` (Python/FastAPI) |
-|---|---|---|
-| Language | TypeScript | Python |
-| Embedding model | `embed-english-v3.0` | `embed-multilingual-v3.0` |
-| Chat search strategy | **Vector-only** | **Hybrid RRF** (vector + FTS) |
-| Search endpoint strategy | Hybrid RRF | Hybrid RRF |
-| Similarity threshold | App-side filter after query | SQL-level parameter inside query |
-| Reranking | None | Cohere `rerank-multilingual-v3.0` (configurable) |
-| Metadata filtering | None | Yes: category, brand, price range |
-| Live inventory enrichment | Yes (per-product via `Promise.all`) | Yes (batch fetch, graceful fallback) |
-| Embedding fallback | Silent — no keyword fallback | Falls back to keyword-only + emits `info` SSE event |
-| Session / history | None | PostgreSQL-backed conversation history |
-| SSE event protocol | Raw text stream only | Typed: `info` → `sources` → `token*` → `done` |
-| Source attribution | None | Yes (product_id, title, score per result) |
-| System prompt grounding | Allows general knowledge fallback | Strict RAG-only grounding |
-| FTS column | `content_tsv` computed at **query time** | `content_tsv` pre-computed via **trigger**, GIN indexed |
-| Vector index | Not defined in code | `ivfflat` ANN index bootstrapped at startup |
-| DSPy | None | Scaffolded (`pipeline.py`, `optimize.py`) — placeholder only |
-| DeepEval | None | Not yet implemented |
+| Dimension                 | `project-dropship` (TS/Next.js)          | `chatbot-api` (Python/FastAPI)                               |
+| ------------------------- | ---------------------------------------- | ------------------------------------------------------------ |
+| Language                  | TypeScript                               | Python                                                       |
+| Embedding model           | `embed-english-v3.0`                     | `embed-multilingual-v3.0`                                    |
+| Chat search strategy      | **Vector-only**                          | **Hybrid RRF** (vector + FTS)                                |
+| Search endpoint strategy  | Hybrid RRF                               | Hybrid RRF                                                   |
+| Similarity threshold      | App-side filter after query              | SQL-level parameter inside query                             |
+| Reranking                 | None                                     | Cohere `rerank-multilingual-v3.0` (configurable)             |
+| Metadata filtering        | None                                     | Yes: category, brand, price range                            |
+| Live inventory enrichment | Yes (per-product via `Promise.all`)      | Yes (batch fetch, graceful fallback)                         |
+| Embedding fallback        | Silent — no keyword fallback             | Falls back to keyword-only + emits `info` SSE event          |
+| Session / history         | None                                     | PostgreSQL-backed conversation history                       |
+| SSE event protocol        | Raw text stream only                     | Typed: `info` → `sources` → `token*` → `done`                |
+| Source attribution        | None                                     | Yes (product_id, title, score per result)                    |
+| System prompt grounding   | Allows general knowledge fallback        | Strict RAG-only grounding                                    |
+| FTS column                | `content_tsv` computed at **query time** | `content_tsv` pre-computed via **trigger**, GIN indexed      |
+| Vector index              | Not defined in code                      | `ivfflat` ANN index bootstrapped at startup                  |
+| DSPy                      | None                                     | Scaffolded (`pipeline.py`, `optimize.py`) — placeholder only |
+| DeepEval                  | None                                     | Not yet implemented                                          |
 
 ---
 
@@ -64,33 +64,19 @@ which `project-dropship` has no equivalent of.
 
 All P0–P3 items from the gap analysis are implemented:
 
-| # | Gap | Status | Location |
-|---|---|---|---|
-| 1 | Live inventory enrichment | ✅ Done | `app/services/rag.py` — `_apply_live_enrichment()` |
-| 2 | Similarity threshold gating | ✅ Done | `app/services/retriever.py` — `min_score` SQL param |
-| 3 | Graceful embedding fallback | ✅ Done | `app/services/rag.py` — `get_context()` try/except |
-| 4 | Explicit vector index | ✅ Done | `app/database.py` — `idx_product_embeddings_vector` (ivfflat) |
-| 5 | DB-level FTS column + trigger | ✅ Done | `app/database.py` — `trg_product_embeddings_tsv` + GIN index |
-| 6 | Cohere Rerank integration | ✅ Done | `app/services/rag.py` — `_maybe_rerank()` |
-| 7 | Metadata filtering | ✅ Done | `app/services/retriever.py` — `_build_filter_predicates()` |
+| #   | Gap                           | Status  | Location                                                      |
+| --- | ----------------------------- | ------- | ------------------------------------------------------------- |
+| 1   | Live inventory enrichment     | ✅ Done | `app/services/rag.py` — `_apply_live_enrichment()`            |
+| 2   | Similarity threshold gating   | ✅ Done | `app/services/retriever.py` — `min_score` SQL param           |
+| 3   | Graceful embedding fallback   | ✅ Done | `app/services/rag.py` — `get_context()` try/except            |
+| 4   | Explicit vector index         | ✅ Done | `app/database.py` — `idx_product_embeddings_vector` (ivfflat) |
+| 5   | DB-level FTS column + trigger | ✅ Done | `app/database.py` — `trg_product_embeddings_tsv` + GIN index  |
+| 6   | Cohere Rerank integration     | ✅ Done | `app/services/rag.py` — `_maybe_rerank()`                     |
+| 7   | Metadata filtering            | ✅ Done | `app/services/retriever.py` — `_build_filter_predicates()`    |
 
 ---
 
 ## Remaining Work
-
-### P3 — Background Async Re-indexing
-
-`POST /ingest` is currently synchronous and blocks until indexing completes. At scale this will
-time out for large catalogs.
-
-**What to build:**
-- Use FastAPI `BackgroundTasks` (or ARQ for durability) to run ingest jobs out-of-band
-- Return a `job_id` immediately from `POST /ingest`
-- Expose `GET /ingest/{job_id}/status` → `{ status: "pending" | "running" | "done" | "error" }`
-
-**Files to touch:** `app/routers/ingest.py`, `app/models/schemas.py`
-
----
 
 ### P4a — RAG Evaluation Harness (DeepEval)
 
@@ -100,6 +86,7 @@ metric functions.
 **What to build:**
 
 1. **Golden dataset** — `tests/eval/golden_dataset.json`
+
    ```json
    [
      {
@@ -109,6 +96,7 @@ metric functions.
      }
    ]
    ```
+
    Aim for 15–25 representative queries covering edge cases (no match, multilingual, filter combos).
 
 2. **Eval test file** — `tests/eval/test_rag_quality.py`
@@ -133,6 +121,7 @@ placeholders only. `DSPyRAGPipeline` is not a real DSPy program.
 **What to build:**
 
 1. Replace `DSPyRAGPipeline` with a real DSPy program:
+
    ```python
    class RAGSignature(dspy.Signature):
        """Grounded answer generation from retrieval context."""
@@ -157,6 +146,21 @@ placeholders only. `DSPyRAGPipeline` is not a real DSPy program.
 4. Add `dspy-ai` to `requirements.txt` (runtime dependency).
 
 5. Add `scripts/run_optimization.py` for one-off / scheduled optimization runs.
+
+---
+
+### P5 — Background Async Re-indexing
+
+`POST /ingest` is currently synchronous and blocks until indexing completes. At scale this will
+time out for large catalogs.
+
+**What to build:**
+
+- Use FastAPI `BackgroundTasks` (or ARQ for durability) to run ingest jobs out-of-band
+- Return a `job_id` immediately from `POST /ingest`
+- Expose `GET /ingest/{job_id}/status` → `{ status: "pending" | "running" | "done" | "error" }`
+
+**Files to touch:** `app/routers/ingest.py`, `app/models/schemas.py`
 
 ---
 
