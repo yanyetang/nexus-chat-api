@@ -2,6 +2,152 @@
 
 FastAPI backend for product-grounded search and chat over a supplier catalog.
 
+## Architecture
+
+```mermaid
+graph TB
+    Client["Client<br/>(Browser / App)"]
+
+    subgraph API ["FastAPI Backend"]
+        ChatEndpoint["/chat (SSE)"]
+        SearchEndpoint["/search"]
+        IngestEndpoint["/ingest"]
+    end
+
+    subgraph Storage ["PostgreSQL + pgvector"]
+        PG_Embed["product_embeddings<br/>(vector + FTS)"]
+        PG_Sessions["chat_sessions"]
+    end
+
+    subgraph External ["External Services"]
+        Cohere["Cohere<br/>rerank-multilingual-v3.0"]
+        LLM["OpenRouter<br/>(LLM generation)"]
+        Supplier["Supplier API<br/>(live inventory)"]
+        Embedder["Embedding Model"]
+    end
+
+    subgraph Eval ["Evaluation & CI"]
+        DeepEval["DeepEval Harness"]
+        GeminiJudge["Gemini Judge"]
+        GHA[".github/workflows/eval.yml"]
+    end
+
+    Client --> ChatEndpoint
+    Client --> SearchEndpoint
+    Client --> IngestEndpoint
+
+    ChatEndpoint --> PG_Sessions
+    ChatEndpoint --> PG_Embed
+    ChatEndpoint --> Cohere
+    ChatEndpoint --> Supplier
+    ChatEndpoint --> LLM
+
+    SearchEndpoint --> PG_Embed
+    SearchEndpoint --> Embedder
+    SearchEndpoint --> Cohere
+
+    IngestEndpoint --> Supplier
+    IngestEndpoint --> Embedder
+    IngestEndpoint --> PG_Embed
+
+    DeepEval --> GeminiJudge
+    GHA --> DeepEval
+```
+
+## Workflows
+
+### Ingest
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant API as FastAPI
+    participant BG as Background Task
+    participant Sup as Supplier API
+    participant Emb as Embedding Model
+    participant DB as PostgreSQL
+
+    C->>API: POST /ingest
+    API-->>C: 202 { job_id }
+    API->>BG: spawn background task
+
+    loop Catalog pages
+        BG->>Sup: fetch catalog page
+        Sup-->>BG: product chunks
+        BG->>Emb: embed batch
+        Emb-->>BG: vectors
+        BG->>DB: upsert product_embeddings
+    end
+
+    BG->>DB: mark job complete
+
+    C->>API: GET /ingest/{job_id}/status
+    API->>DB: query job status
+    API-->>C: { status, indexed, total }
+```
+
+### Search
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant API as FastAPI
+    participant Emb as Embedding Model
+    participant DB as PostgreSQL
+    participant Cohere as Cohere Reranker
+
+    C->>API: GET /search?q=...&filters=...
+    API->>Emb: embed query
+    alt embedding succeeds
+        Emb-->>API: query vector
+        API->>DB: hybrid retrieval (vector cosine + FTS)
+    else embedding fails
+        API->>DB: keyword-only FTS retrieval
+    end
+    DB-->>API: candidates (up to RETRIEVAL_CANDIDATE_LIMIT)
+    API->>API: apply similarity threshold gate
+    API->>Cohere: rerank candidates
+    Cohere-->>API: reranked top-N
+    API-->>C: ranked JSON results
+```
+
+### Chat
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant API as FastAPI
+    participant DB as PostgreSQL
+    participant Cohere as Cohere Reranker
+    participant Sup as Supplier API
+    participant LLM as OpenRouter LLM
+
+    C->>API: POST /chat { session_id, message, locale, filters }
+    API->>DB: load prior session messages
+    DB-->>API: chat history
+
+    API->>DB: hybrid retrieval (vector + FTS + filters)
+    DB-->>API: candidates
+    API->>Cohere: rerank candidates
+    Cohere-->>API: top-N chunks
+
+    loop Each retrieved product
+        API->>Sup: fetch live stock & price
+        Sup-->>API: inventory snapshot
+    end
+
+    API->>LLM: grounded prompt (history + chunks + live data)
+    LLM-->>API: token stream
+
+    loop SSE stream
+        API-->>C: event: sources (first)
+        API-->>C: event: token (repeated)
+        API-->>C: event: done
+    end
+
+    API->>DB: persist updated chat history
+```
+
 ## What is Implemented
 
 - Hybrid retrieval with vector + PostgreSQL FTS candidate generation
@@ -13,31 +159,6 @@ FastAPI backend for product-grounded search and chat over a supplier catalog.
 - DB bootstrap for `TSVECTOR` maintenance trigger + GIN index + IVFFlat vector index
 - DeepEval harness and nightly/PR workflow
 - DSPy optimization scaffold with offline artifact generation and startup artifact load
-
-## Core Workflows
-
-### Ingest (Background)
-
-1. Client calls `POST /ingest`
-2. API returns `202` with `job_id`
-3. Background task fetches supplier catalog, chunks text, embeds in batches, and upserts `product_embeddings`
-4. Client polls `GET /ingest/{job_id}/status`
-
-### Search
-
-1. Embed query (or fallback to keyword-only retrieval when embeddings fail)
-2. Run hybrid candidate retrieval (semantic + FTS) with optional metadata filters
-3. Apply threshold gating
-4. Return ranked JSON results
-
-### Chat
-
-1. Load prior session messages
-2. Retrieve candidates using hybrid search with fallback and filters
-3. Rerank candidates with Cohere cross-encoder
-4. Enrich retrieved chunks with live supplier stock/price
-5. Stream answer via SSE (`sources` -> `token*` -> `done`)
-6. Persist updated chat history
 
 ## Database Bootstrap
 
@@ -101,6 +222,19 @@ Run evaluation:
 ```bash
 pytest tests/eval -m deepeval -q
 ```
+
+### Updating the Golden Dataset
+
+Update `tests/eval/golden_dataset.json` when:
+
+- **New retrieval path** — any change to hybrid search logic, threshold, or candidate limit: add samples that exercise the changed path
+- **Prompt template change** — update `expected_output` and `retrieval_context` to match the new prompt format
+- **DSPy optimization run** — update `actual_output` values to reflect what the optimized pipeline now produces
+- **New locale support** — add at least one multilingual sample per new locale
+- **Retrieval context format change** — update `retrieval_context` strings in all samples to match the new runtime format
+- **Threshold review** — if the pass rate drops below 80% on a healthy run, review whether `threshold=0.5` in `conftest.py` needs adjusting or whether dataset quality has drifted
+
+Each sample must keep all six fields: `case_id`, `input`, `actual_output`, `expected_output`, `expected_product_ids`, `retrieval_context`.
 
 Generate optimization artifact:
 
