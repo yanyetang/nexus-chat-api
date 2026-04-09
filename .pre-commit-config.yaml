@@ -21,7 +21,7 @@ repos:
 
       - id: pytest
         name: pytest
-        entry: .venv/bin/pytest tests/ -q
+        entry: .venv/bin/pytest tests/ -q -m "not deepeval"
         language: system
         types: [python]
         pass_filenames: false

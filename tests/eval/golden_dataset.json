@@ -1,17 +1,123 @@
 [
   {
+    "case_id": "tee-under-25",
     "input": "I need a lightweight summer t-shirt under $25",
-    "expected_output": "Recommend lightweight t-shirt options with price and stock details.",
-    "expected_product_ids": ["tee-101", "tee-204"]
+    "actual_output": "Two lightweight options are Basic Cotton Crew Neck T-Shirt (tee-101) at $18.99 with good stock and Performance Dry Tee (tee-204) at $24.99 with low stock. Both are suitable for hot weather.",
+    "expected_output": "Two lightweight options are Basic Cotton Crew Neck T-Shirt (tee-101) at $19.99 with strong stock and Performance Dry Tee (tee-204) at $24.99 with limited stock.",
+    "expected_product_ids": ["tee-101", "tee-204"],
+    "retrieval_context": [
+      "[1] Product ID: tee-101\nTitle: Basic Cotton Crew Neck T-Shirt\nScore: 0.9120\nData:\nProduct: Basic Cotton Crew Neck T-Shirt\nBrand: ComfortWear | Model: CW-TEE-001 | Category: Tops\nDescription: Lightweight cotton tee for warm weather.\nVariants:\n- White / S: $19.99, Size: S, Color: White, Stock: 50\n- White / M: $19.99, Size: M, Color: White, Stock: 42",
+      "[2] Product ID: tee-204\nTitle: Performance Dry Tee\nScore: 0.9012\nData:\nProduct: Performance Dry Tee\nBrand: AeroFit | Model: AF-DRY-204 | Category: Tops\nDescription: Moisture-wicking lightweight training tee.\nVariants:\n- Black / M: $24.99, Size: M, Color: Black, Stock: 6\n- Black / L: $24.99, Size: L, Color: Black, Stock: 4"
+    ]
   },
   {
+    "case_id": "black-running-shoes",
     "input": "Show me black running shoes in stock",
-    "expected_output": "List black running shoes and mention available variants in stock.",
-    "expected_product_ids": ["shoe-302", "shoe-499"]
+    "actual_output": "You can choose SprintFlow Runner (shoe-302) in black for $79.99 and NightPace Cushion (shoe-499) in black for $89.99. Both have medium stock.",
+    "expected_output": "You can choose SprintFlow Runner (shoe-302) in black for $79.99 and NightPace Cushion (shoe-499) in black for $89.99. SprintFlow has healthy stock while NightPace is lower in stock.",
+    "expected_product_ids": ["shoe-302", "shoe-499"],
+    "retrieval_context": [
+      "[1] Product ID: shoe-302\nTitle: SprintFlow Runner\nScore: 0.8940\nData:\nProduct: SprintFlow Runner\nBrand: FleetStep | Model: FS-RUN-302 | Category: Footwear\nDescription: Daily trainer with breathable upper.\nVariants:\n- Black / 9: $79.99, Size: 9, Color: Black, Stock: 18\n- Black / 10: $79.99, Size: 10, Color: Black, Stock: 15",
+      "[2] Product ID: shoe-499\nTitle: NightPace Cushion\nScore: 0.8831\nData:\nProduct: NightPace Cushion\nBrand: StrideLab | Model: SL-NP-499 | Category: Footwear\nDescription: Cushioned runner for long-distance comfort.\nVariants:\n- Black / 9: $89.99, Size: 9, Color: Black, Stock: 5\n- Black / 10: $89.99, Size: 10, Color: Black, Stock: 3"
+    ]
   },
   {
+    "case_id": "travel-backpack-60",
     "input": "Compare backpacks for travel around $60",
-    "expected_output": "Compare travel backpacks with pricing and key features.",
-    "expected_product_ids": ["bag-901", "bag-114"]
+    "actual_output": "TrailCarry 28L (bag-901) is around $59.99 with laptop storage, while MetroPack Flex (bag-114) is around $64.99 and offers extra compartments. MetroPack is lighter.",
+    "expected_output": "TrailCarry 28L (bag-901) is $59.99 with a laptop sleeve and 28L capacity. MetroPack Flex (bag-114) is $64.99 with multiple organizer compartments and 30L capacity.",
+    "expected_product_ids": ["bag-901", "bag-114"],
+    "retrieval_context": [
+      "[1] Product ID: bag-901\nTitle: TrailCarry 28L Travel Backpack\nScore: 0.8704\nData:\nProduct: TrailCarry 28L Travel Backpack\nBrand: NorthRoute | Model: NR-TC-901 | Category: Bags\nDescription: Carry-on friendly backpack with padded laptop sleeve.\nVariants:\n- Graphite: $59.99, Capacity: 28L, Stock: 21",
+      "[2] Product ID: bag-114\nTitle: MetroPack Flex\nScore: 0.8619\nData:\nProduct: MetroPack Flex\nBrand: UrbanTrail | Model: UT-MP-114 | Category: Bags\nDescription: Structured travel backpack with front organizer panel.\nVariants:\n- Black: $64.99, Capacity: 30L, Stock: 16"
+    ]
+  },
+  {
+    "case_id": "wireless-headphones-battery",
+    "input": "Any wireless headphones with long battery life?",
+    "actual_output": "AuroraSound ANC (hdp-201) gives 35 hours and EchoTune Lite (hdp-355) gives 24 hours with ANC. Both support Bluetooth multipoint.",
+    "expected_output": "AuroraSound ANC (hdp-201) offers up to 35 hours. EchoTune Lite (hdp-355) offers up to 24 hours. Based on context, multipoint support is listed for AuroraSound only.",
+    "expected_product_ids": ["hdp-201", "hdp-355"],
+    "retrieval_context": [
+      "[1] Product ID: hdp-201\nTitle: AuroraSound ANC Headphones\nScore: 0.8849\nData:\nProduct: AuroraSound ANC Headphones\nBrand: WaveCore | Model: WC-ANC-201 | Category: Audio\nDescription: Over-ear wireless headphones with active noise cancellation.\nSpecs: Battery up to 35 hours, Bluetooth 5.3, Multipoint: Yes",
+      "[2] Product ID: hdp-355\nTitle: EchoTune Lite\nScore: 0.8715\nData:\nProduct: EchoTune Lite\nBrand: WaveCore | Model: WC-ET-355 | Category: Audio\nDescription: Lightweight wireless headphones for daily commuting.\nSpecs: Battery up to 24 hours, Bluetooth 5.2, Multipoint: No"
+    ]
+  },
+  {
+    "case_id": "nike-sneakers",
+    "input": "Show Nike sneakers",
+    "actual_output": "Nike AeroDash (snk-601) and Nike StreetGlide (snk-677) are available. AeroDash starts at $109.99 while StreetGlide starts at $119.99.",
+    "expected_output": "Nike AeroDash (snk-601) and Nike StreetGlide (snk-677) are available. AeroDash starts at $109.99 while StreetGlide starts at $129.99.",
+    "expected_product_ids": ["snk-601", "snk-677"],
+    "retrieval_context": [
+      "[1] Product ID: snk-601\nTitle: Nike AeroDash\nScore: 0.8520\nData:\nProduct: Nike AeroDash\nBrand: Nike | Model: NK-AD-601 | Category: Footwear\nDescription: Responsive neutral running sneaker.\nVariants:\n- White / 9: $109.99, Stock: 12",
+      "[2] Product ID: snk-677\nTitle: Nike StreetGlide\nScore: 0.8422\nData:\nProduct: Nike StreetGlide\nBrand: Nike | Model: NK-SG-677 | Category: Footwear\nDescription: Lifestyle sneaker with cushioned midsole.\nVariants:\n- Black / 9: $129.99, Stock: 8"
+    ]
+  },
+  {
+    "case_id": "sandals-size-8",
+    "input": "Do you have women's sandals size 8?",
+    "actual_output": "Yes. BreezeWalk Sandal (san-410) has size 8 in tan, and Coastline Slide (san-502) has size 8 in black. Both are in stock.",
+    "expected_output": "Yes. BreezeWalk Sandal (san-410) has women's size 8 in tan with solid stock, and Coastline Slide (san-502) has women's size 8 in black with lower stock.",
+    "expected_product_ids": ["san-410", "san-502"],
+    "retrieval_context": [
+      "[1] Product ID: san-410\nTitle: BreezeWalk Sandal\nScore: 0.8471\nData:\nProduct: BreezeWalk Sandal\nBrand: SunStride | Model: SS-BW-410 | Category: Footwear\nDescription: Cushioned women's sandal with adjustable straps.\nVariants:\n- Tan / 8: $49.99, Gender: Women, Size: 8, Stock: 14",
+      "[2] Product ID: san-502\nTitle: Coastline Slide\nScore: 0.8330\nData:\nProduct: Coastline Slide\nBrand: SunStride | Model: SS-CS-502 | Category: Footwear\nDescription: Lightweight women's slide sandal.\nVariants:\n- Black / 8: $39.99, Gender: Women, Size: 8, Stock: 5"
+    ]
+  },
+  {
+    "case_id": "low-stock-alert",
+    "input": "Which of my options are almost out of stock?",
+    "actual_output": "Low-stock items include Performance Dry Tee (tee-204), NightPace Cushion (shoe-499), and AuroraSound ANC (hdp-201).",
+    "expected_output": "Low-stock items include Performance Dry Tee (tee-204), NightPace Cushion (shoe-499), and EchoTune Lite (hdp-355).",
+    "expected_product_ids": ["tee-204", "shoe-499", "hdp-355"],
+    "retrieval_context": [
+      "[1] Product ID: tee-204\nTitle: Performance Dry Tee\nScore: 0.8213\nData:\nVariants:\n- Black / M: $24.99, Stock: 6\n- Black / L: $24.99, Stock: 4",
+      "[2] Product ID: shoe-499\nTitle: NightPace Cushion\nScore: 0.8107\nData:\nVariants:\n- Black / 9: $89.99, Stock: 5\n- Black / 10: $89.99, Stock: 3",
+      "[3] Product ID: hdp-355\nTitle: EchoTune Lite\nScore: 0.8001\nData:\nSpecs: Battery up to 24 hours\nStock: 4"
+    ]
+  },
+  {
+    "case_id": "blue-denim-jacket",
+    "input": "I need a blue denim jacket under $80",
+    "actual_output": "Try Harbor Denim Jacket (jkt-303) at $74.99 and Midtown Stretch Denim (jkt-418) at $78.99. Harbor has classic fit and Midtown has stretch fabric.",
+    "expected_output": "Try Harbor Denim Jacket (jkt-303) at $74.99 and Midtown Stretch Denim (jkt-418) at $79.99. Harbor has a classic fit and Midtown includes stretch fabric.",
+    "expected_product_ids": ["jkt-303", "jkt-418"],
+    "retrieval_context": [
+      "[1] Product ID: jkt-303\nTitle: Harbor Denim Jacket\nScore: 0.8299\nData:\nProduct: Harbor Denim Jacket\nBrand: RivetLine | Category: Outerwear\nVariants:\n- Blue / M: $74.99, Stock: 9",
+      "[2] Product ID: jkt-418\nTitle: Midtown Stretch Denim\nScore: 0.8190\nData:\nProduct: Midtown Stretch Denim\nBrand: RivetLine | Category: Outerwear\nVariants:\n- Blue / M: $79.99, Stock: 7"
+    ]
+  },
+  {
+    "case_id": "no-match",
+    "input": "Find me a stainless steel smartwatch under $40",
+    "actual_output": "I could not find stainless steel smartwatches under $40 in the retrieved catalog context.",
+    "expected_output": "The retrieved context does not contain a stainless steel smartwatch under $40.",
+    "expected_product_ids": [],
+    "retrieval_context": [
+      "No relevant products were retrieved."
+    ]
+  },
+  {
+    "case_id": "fr-running-shoes",
+    "input": "Je cherche des chaussures de course noires",
+    "actual_output": "Je recommande SprintFlow Runner (shoe-302) a 79,99 USD et NightPace Cushion (shoe-499) a 89,99 USD. Les deux modeles sont disponibles.",
+    "expected_output": "Je recommande SprintFlow Runner (shoe-302) a 79,99 USD et NightPace Cushion (shoe-499) a 89,99 USD. SprintFlow a un stock plus eleve que NightPace.",
+    "expected_product_ids": ["shoe-302", "shoe-499"],
+    "retrieval_context": [
+      "[1] Product ID: shoe-302\nTitle: SprintFlow Runner\nScore: 0.8410\nData:\nVariants:\n- Noir / 9: $79.99, Stock: 18",
+      "[2] Product ID: shoe-499\nTitle: NightPace Cushion\nScore: 0.8344\nData:\nVariants:\n- Noir / 9: $89.99, Stock: 5"
+    ]
+  },
+  {
+    "case_id": "es-travel-backpacks",
+    "input": "Busco mochilas para viaje por unos 60 dolares",
+    "actual_output": "TrailCarry 28L (bag-901) cuesta 59.99 y MetroPack Flex (bag-114) cuesta 64.99. Ambas tienen compartimento para laptop.",
+    "expected_output": "TrailCarry 28L (bag-901) cuesta 59.99 y MetroPack Flex (bag-114) cuesta 64.99. Solo TrailCarry menciona funda acolchada para laptop en este contexto.",
+    "expected_product_ids": ["bag-901", "bag-114"],
+    "retrieval_context": [
+      "[1] Product ID: bag-901\nTitle: TrailCarry 28L Travel Backpack\nScore: 0.8362\nData:\nDescription: Carry-on friendly backpack with padded laptop sleeve.\nPrice: $59.99",
+      "[2] Product ID: bag-114\nTitle: MetroPack Flex\nScore: 0.8288\nData:\nDescription: Structured travel backpack with front organizer panel.\nPrice: $64.99"
+    ]
   }
 ]
