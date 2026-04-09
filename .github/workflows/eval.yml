@@ -31,20 +31,31 @@ jobs:
         if: ${{ secrets.DEEPEVAL_API_KEY != '' }}
         run: deepeval login --api-key "${{ secrets.DEEPEVAL_API_KEY }}"
 
+      - name: Report evaluation mode
+        run: |
+          if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
+            echo "DeepEval mode: live judge execution (GEMINI_API_KEY present)."
+          else
+            echo "DeepEval mode: skip-only run (GEMINI_API_KEY missing)."
+          fi
+
       - name: Run RAG evaluation suite
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        if: ${{ secrets.DEEPEVAL_API_KEY != '' }}
-        run: pytest tests/eval -m deepeval -q
+        run: pytest tests/eval -m deepeval -q -rs
 
       - name: PR summary
-        if: ${{ github.event_name == 'pull_request' && secrets.DEEPEVAL_API_KEY != '' }}
+        if: ${{ github.event_name == 'pull_request' }}
         uses: actions/github-script@v7
         with:
           script: |
+            const liveMode = !!process.env.GEMINI_KEY_PRESENT;
             const body = [
               'DeepEval workflow completed.',
-              'See workflow logs for ContextualPrecision, ContextualRecall, Faithfulness, and AnswerRelevancy metrics.'
+              liveMode
+                ? 'Mode: live judge execution (Gemini key present).'
+                : 'Mode: skip-only (Gemini key missing; tests intentionally skipped).',
+              'See workflow logs for ContextualPrecision, ContextualRecall, Faithfulness, and AnswerRelevancy metric output.'
             ].join('\n');
             github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -52,3 +63,5 @@ jobs:
               issue_number: context.issue.number,
               body
             });
+        env:
+          GEMINI_KEY_PRESENT: ${{ secrets.GEMINI_API_KEY != '' }}
