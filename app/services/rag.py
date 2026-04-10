@@ -146,6 +146,16 @@ class RAGService:
             )
             if broad_results:
                 info_message = "All retrieval candidates were below the similarity threshold."
+                results = broad_results
+
+        seen: set[str] = set()
+        deduped: list[dict] = []
+        for item in results:
+            pid = item.get("product_id")
+            if pid not in seen:
+                seen.add(pid)
+                deduped.append(item)
+        results = deduped
 
         reranked_results = await self._maybe_rerank(message=message, results=results)
         enriched_results = await self._apply_live_enrichment(reranked_results)
