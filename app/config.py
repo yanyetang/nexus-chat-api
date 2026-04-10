@@ -14,8 +14,11 @@ class Settings(BaseSettings):
     openrouter_api_key: str = Field(validation_alias="OPENROUTER_API_KEY")
 
     chatbot_api_key: str | None = Field(default=None, validation_alias="CHATBOT_API_KEY")
-    openrouter_model: str = Field(
-        default="google/gemini-2.0-flash-001", validation_alias="OPENROUTER_MODEL"
+    openrouter_chat_model: str = Field(
+        default="openrouter/auto", validation_alias="OPENROUTER_CHAT_MODEL"
+    )
+    openrouter_judge_model: str = Field(
+        default="openai/gpt-4o-mini", validation_alias="OPENROUTER_JUDGE_MODEL"
     )
     allowed_origins: str = Field(default="*", validation_alias="ALLOWED_ORIGINS")
     retrieval_min_score: float = Field(default=0.3, validation_alias="RETRIEVAL_MIN_SCORE")

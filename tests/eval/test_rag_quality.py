@@ -32,3 +32,24 @@ def test_rag_quality_contract(sample: dict[str, Any], deepeval_metrics: list[Any
         retrieval_context=sample["retrieval_context"],
     )
     assert_test(test_case=test_case, metrics=deepeval_metrics)
+
+
+@pytest.mark.deepeval
+def test_no_match_faithfulness(openrouter_judge: Any) -> None:
+    """When retrieval returns nothing the model must not hallucinate products."""
+    pytest.importorskip("deepeval")
+
+    from deepeval import assert_test
+    from deepeval.metrics import FaithfulnessMetric
+    from deepeval.test_case import LLMTestCase
+
+    test_case = LLMTestCase(
+        input="Find me a stainless steel smartwatch under $40",
+        actual_output="I could not find stainless steel smartwatches under $40 in the retrieved catalog context.",
+        expected_output="The retrieved context does not contain a stainless steel smartwatch under $40.",
+        retrieval_context=["No relevant products were retrieved."],
+    )
+    assert_test(
+        test_case=test_case,
+        metrics=[FaithfulnessMetric(model=openrouter_judge, threshold=0.5, include_reason=True)],
+    )
