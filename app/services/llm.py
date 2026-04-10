@@ -11,7 +11,7 @@ class LLMService:
     def __init__(self) -> None:
         settings = get_settings()
         self._api_key = settings.openrouter_api_key
-        self._model = settings.openrouter_model
+        self._model = settings.openrouter_chat_model
         self._url = "https://openrouter.ai/api/v1/chat/completions"
 
     async def stream_chat(self, messages: list[dict]) -> AsyncIterator[str]:

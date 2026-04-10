@@ -201,7 +201,8 @@ Required:
 Optional:
 
 - `CHATBOT_API_KEY`
-- `OPENROUTER_MODEL` (default `google/gemini-2.0-flash-001`)
+- `OPENROUTER_CHAT_MODEL` (default `openrouter/auto`)
+- `OPENROUTER_JUDGE_MODEL` (default `openai/gpt-4o-mini`, used by DeepEval eval harness)
 - `ALLOWED_ORIGINS` (default `*`)
 - `RETRIEVAL_MIN_SCORE` (default `0.3`)
 - `RETRIEVAL_CANDIDATE_LIMIT` (default `20`)

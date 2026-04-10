@@ -14,7 +14,7 @@ jobs:
   deepeval:
     runs-on: ubuntu-latest
     env:
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       DEEPEVAL_API_KEY: ${{ secrets.DEEPEVAL_API_KEY }}
     steps:
       - name: Checkout
@@ -36,10 +36,10 @@ jobs:
 
       - name: Report evaluation mode
         run: |
-          if [ -n "$GEMINI_API_KEY" ]; then
-            echo "DeepEval mode: live judge execution (GEMINI_API_KEY present)."
+          if [ -n "$OPENROUTER_API_KEY" ]; then
+            echo "DeepEval mode: live judge execution (OPENROUTER_API_KEY present)."
           else
-            echo "DeepEval mode: skip-only run (GEMINI_API_KEY missing)."
+            echo "DeepEval mode: skip-only run (OPENROUTER_API_KEY missing)."
           fi
 
       - name: Run RAG evaluation suite
@@ -50,12 +50,12 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const liveMode = !!process.env.GEMINI_API_KEY;
+            const liveMode = !!process.env.OPENROUTER_API_KEY;
             const body = [
               'DeepEval workflow completed.',
               liveMode
-                ? 'Mode: live judge execution (Gemini key present).'
-                : 'Mode: skip-only (Gemini key missing; tests intentionally skipped).',
+                ? 'Mode: live judge execution (OpenRouter key present).'
+                : 'Mode: skip-only (OPENROUTER_API_KEY missing; tests intentionally skipped).',
               'See workflow logs for ContextualPrecision, ContextualRecall, Faithfulness, and AnswerRelevancy metric output.'
             ].join('\n');
             github.rest.issues.createComment({
