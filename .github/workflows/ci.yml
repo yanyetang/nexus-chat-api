@@ -27,6 +27,9 @@ jobs:
       - name: Type check
         run: pyright --pythonpath "$(which python)" app
 
+      - name: Dependency vulnerability scan
+        run: pip-audit -r requirements.txt
+
       - name: Import smoke test
         run: python -c "from app.main import app; print('app-loaded')"
         env:
