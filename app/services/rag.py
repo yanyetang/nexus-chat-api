@@ -152,9 +152,10 @@ class RAGService:
         deduped: list[dict] = []
         for item in results:
             pid = item.get("product_id")
-            if pid not in seen:
-                seen.add(pid)
-                deduped.append(item)
+            if pid is None or pid in seen:
+                continue
+            seen.add(pid)
+            deduped.append(item)
         results = deduped
 
         reranked_results = await self._maybe_rerank(message=message, results=results)
