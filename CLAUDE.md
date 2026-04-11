@@ -2,9 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## MCP
+## System Context
 
-Context7 is configured — use it to fetch up-to-date library documentation when needed (e.g. DSPy, DeepEval, FastAPI, asyncpg, Cohere).
+This repo is one of three services in the `dropship-nexus` project (parent dir: `../`):
+
+- **nexus-app** — Shopify embedded frontend (Next.js)
+- **nexus-catalog-api** — product catalog backend (NestJS + Prisma + PostgreSQL)
+- **nexus-chat-api** — this service; RAG-powered chat backend (FastAPI + pgvector)
 
 ## Architecture
 
@@ -13,7 +17,7 @@ FastAPI RAG backend for e-commerce product discovery via a supplier catalog.
 ## Key Conventions
 
 - All I/O is async throughout (asyncpg, httpx async client, async generators for SSE)
-- Linting: Ruff with rules E, F, I, UP; line length 100 (`ruff.toml`)
-- Type checking: Pyright strict mode (`pyrightconfig.json`)
-- Pre-commit hooks run ruff, pyright, and pytest — CI runs the same checks
-- Auth is optional: if `CHATBOT_API_KEY` is unset, bearer token validation is skipped
+
+## MCP
+
+Context7 is configured — use it to fetch up-to-date library documentation when needed (e.g. DSPy, DeepEval, FastAPI, asyncpg, Cohere).
