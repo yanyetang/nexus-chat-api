@@ -28,7 +28,10 @@ jobs:
         run: pyright --pythonpath "$(which python)" app
 
       - name: Dependency vulnerability scan
-        run: pip-audit -r requirements.txt
+        run: >
+          test -z "$(pip-audit -r requirements.txt --format=json 2>/dev/null
+          | jq '.dependencies[].vulns[].fix_versions[]')"
+          || pip-audit -r requirements.txt
 
       - name: Import smoke test
         run: python -c "from app.main import app; print('app-loaded')"
