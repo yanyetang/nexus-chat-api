@@ -2,8 +2,6 @@
 
 _Analysis date: 2026-04-08 — Updated: 2026-04-11_
 
-> **Project rename:** `nexus-chat-api` → `nexus-chat-api` (now at `dropship-nexus/nexus-chat-api`)
-
 ## Architecture Overview
 
 | Dimension                 | `project-dropship` (TS/Next.js)          | `nexus-chat-api` (Python/FastAPI)                            |
