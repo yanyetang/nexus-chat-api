@@ -14,10 +14,10 @@ This repo is one of three services in the `dropship-nexus` project (parent dir: 
 
 FastAPI RAG backend for e-commerce product discovery via a supplier catalog.
 
-## Key Conventions
-
-- All I/O is async throughout (asyncpg, httpx async client, async generators for SSE)
-
 ## MCP
 
-Context7 is configured — use it to fetch up-to-date library documentation when needed (e.g. DSPy, DeepEval, FastAPI, asyncpg, Cohere).
+Context7 is configured — use it to fetch up-to-date library documentation when implementing any critical path.
+
+## Fixing pnpm Audit Vulnerabilities
+
+Use `/pnpm-audit-fix` (manual skill) when audit vulnerabilities are reported.

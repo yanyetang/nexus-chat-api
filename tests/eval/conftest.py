@@ -14,7 +14,7 @@ def _require_openrouter_key() -> None:
 def openrouter_judge() -> Any:
     pytest.importorskip("deepeval")
     from app.config import get_settings
-    from tests.eval.openrouter_judge import OpenRouterJudge
+    from app.optimization.judge import OpenRouterJudge
 
     settings = get_settings()
     return OpenRouterJudge(

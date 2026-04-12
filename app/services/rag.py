@@ -1,10 +1,11 @@
 from app.config import get_settings
 from app.exceptions import ExternalServiceError
+from app.optimization import get_optimized_artifact
 from app.services.embeddings import EmbeddingService
 from app.services.llm import LLMService
 from app.services.retriever import RetrieverService
 from app.services.supplier import SupplierService
-from app.utils.prompts import SYSTEM_PROMPT, build_context_block
+from app.utils.prompts import build_context_block, build_system_prompt, build_user_prompt
 
 
 class RAGService:
@@ -169,16 +170,17 @@ class RAGService:
         results: list[dict],
     ):
         context_block = build_context_block(results)
+        optimized_artifact = get_optimized_artifact()
 
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": build_system_prompt(optimized_artifact)},
             *history,
             {
                 "role": "user",
-                "content": (
-                    "Use this product retrieval context:\n\n"
-                    f"{context_block}\n\n"
-                    f"User request: {message}"
+                "content": build_user_prompt(
+                    context_block=context_block,
+                    message=message,
+                    optimized_artifact=optimized_artifact,
                 ),
             },
         ]

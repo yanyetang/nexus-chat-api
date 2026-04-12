@@ -97,5 +97,15 @@
       "[1] Product ID: bag-901\nTitle: TrailCarry 28L Travel Backpack\nScore: 0.8362\nData:\nDescription: Carry-on friendly backpack with padded laptop sleeve.\nPrice: $59.99",
       "[2] Product ID: bag-114\nTitle: MetroPack Flex\nScore: 0.8288\nData:\nDescription: Structured travel backpack with front organizer panel.\nPrice: $64.99"
     ]
+  },
+  {
+    "case_id": "no-match",
+    "input": "Find me a stainless steel smartwatch under $40",
+    "actual_output": "I could not find stainless steel smartwatches under $40 in the retrieved catalog context.",
+    "expected_output": "The retrieved context does not contain a stainless steel smartwatch under $40.",
+    "expected_product_ids": [],
+    "retrieval_context": [
+      "No relevant products were retrieved."
+    ]
   }
 ]
