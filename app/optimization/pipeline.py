@@ -5,7 +5,7 @@ from typing import Any
 
 try:
     import dspy
-except Exception:  # pragma: no cover - handled by runtime checks.
+except ImportError:  # pragma: no cover - handled by runtime checks.
     dspy = None
 
 _ARTIFACT_PATH = Path("artifacts/optimized_pipeline.json")
