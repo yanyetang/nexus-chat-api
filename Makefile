@@ -11,7 +11,7 @@ help:
 	@echo "  make clean        - Remove build artifacts and cache"
 
 install:
-	python3 -m venv .venv
+	test -x .venv/bin/python || python3 -m venv .venv
 	.venv/bin/pip install -r requirements.txt
 	.venv/bin/pip install -r requirements-dev.txt
 
