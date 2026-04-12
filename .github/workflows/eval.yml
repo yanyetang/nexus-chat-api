@@ -13,6 +13,8 @@ on:
 jobs:
   deepeval:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     env:
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       DEEPEVAL_API_KEY: ${{ secrets.DEEPEVAL_API_KEY }}

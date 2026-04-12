@@ -21,3 +21,7 @@ FastAPI RAG backend for e-commerce product discovery via a supplier catalog.
 ## MCP
 
 Context7 is configured — use it to fetch up-to-date library documentation when implementing any critical path.
+
+## Fixing pnpm Audit Vulnerabilities
+
+Use `/pnpm-audit-fix` (manual skill) when audit vulnerabilities are reported.
