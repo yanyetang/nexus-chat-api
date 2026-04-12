@@ -20,4 +20,4 @@ FastAPI RAG backend for e-commerce product discovery via a supplier catalog.
 
 ## MCP
 
-Context7 is configured — use it to fetch up-to-date library documentation when needed (e.g. DSPy, DeepEval, FastAPI, asyncpg, Cohere).
+Context7 is configured — use it to fetch up-to-date library documentation when implementing any critical path.

@@ -4,6 +4,10 @@
   "schedule": ["every weekend"],
   "packageRules": [
     {
+      "matchManagers": ["python-version"],
+      "automerge": false
+    },
+    {
       "matchUpdateTypes": ["minor", "patch"],
       "groupName": "non-major dependencies",
       "automerge": true,

@@ -1,10 +1,12 @@
-# RAG Comparison: `chatbot-api` vs `project-dropship`
+# RAG Comparison: `nexus-chat-api` vs `project-dropship`
 
-_Analysis date: 2026-04-08_
+_Analysis date: 2026-04-08 — Updated: 2026-04-11_
+
+> **Project rename:** `nexus-chat-api` → `nexus-chat-api` (now at `dropship-nexus/nexus-chat-api`)
 
 ## Architecture Overview
 
-| Dimension                 | `project-dropship` (TS/Next.js)          | `chatbot-api` (Python/FastAPI)                               |
+| Dimension                 | `project-dropship` (TS/Next.js)          | `nexus-chat-api` (Python/FastAPI)                            |
 | ------------------------- | ---------------------------------------- | ------------------------------------------------------------ |
 | Language                  | TypeScript                               | Python                                                       |
 | Embedding model           | `embed-english-v3.0`                     | `embed-multilingual-v3.0`                                    |
@@ -34,26 +36,26 @@ _Analysis date: 2026-04-08_
 calls `searchSimilarProducts` — vector-only. This means chat quality degrades for keyword-heavy
 queries (SKUs, brand names, exact product names).
 
-`chatbot-api` applies the same hybrid RRF pipeline (`RetrieverService.hybrid_search`) to both
+`nexus-chat-api` applies the same hybrid RRF pipeline (`RetrieverService.hybrid_search`) to both
 `/chat` and `/search`, ensuring consistent retrieval quality across endpoints.
 
 ### 2. Multilingual Embeddings
 
-`project-dropship` uses `embed-english-v3.0`. `chatbot-api` uses `embed-multilingual-v3.0`,
+`project-dropship` uses `embed-english-v3.0`. `nexus-chat-api` uses `embed-multilingual-v3.0`,
 which supports 100+ languages with no accuracy regression on English. This matters for
 international supplier catalogs or multilingual user bases.
 
 ### 3. DB-Level FTS Maintenance
 
 `project-dropship` computes `to_tsvector(...)` inline at query time — expensive at scale.
-`chatbot-api` maintains a `content_tsv TSVECTOR` column updated by a PostgreSQL trigger
+`nexus-chat-api` maintains a `content_tsv TSVECTOR` column updated by a PostgreSQL trigger
 on insert/update, with a GIN index. Queries hit the pre-computed column directly.
 
 ### 4. Retrieval Pipeline Depth
 
 `project-dropship` pipeline: embed → vector search → threshold filter → enrich → LLM
 
-`chatbot-api` pipeline: embed → hybrid RRF → threshold gate (with broad fallback) → rerank → enrich → LLM
+`nexus-chat-api` pipeline: embed → hybrid RRF → threshold gate (with broad fallback) → rerank → enrich → LLM
 
 Cohere rerank acts as a cross-encoder final ordering pass on top of RRF candidate generation,
 which `project-dropship` has no equivalent of.
@@ -78,102 +80,55 @@ All P0–P3 items from the gap analysis are implemented:
 
 ## Remaining Work
 
-### P4a — RAG Evaluation Harness (DeepEval)
+_Updated 2026-04-11 — all P4a, P4b, and P5 items are now complete._
 
-This is the **prerequisite** for DSPy optimization — both share the same golden dataset and
-metric functions.
+### P4a — RAG Evaluation Harness (DeepEval) ✅
 
-**What to build:**
-
-1. **Golden dataset** — `tests/eval/golden_dataset.json`
-
-   ```json
-   [
-     {
-       "input": "waterproof hiking boots under $150",
-       "expected_output": "...",
-       "expected_product_ids": ["prod_abc", "prod_def"]
-     }
-   ]
-   ```
-
-   Aim for 15–25 representative queries covering edge cases (no match, multilingual, filter combos).
-
-2. **Eval test file** — `tests/eval/test_rag_quality.py`
-   - `ContextualPrecision` — are retrieved chunks ranked correctly?
-   - `ContextualRecall` — do chunks cover the expected answer?
-   - `Faithfulness` — does LLM output stay grounded in retrieved context?
-   - `AnswerRelevancy` — is the answer relevant to the question?
-
-3. **Nightly CI workflow** — `.github/workflows/eval.yml`
-   - Runs on schedule (`cron: '0 2 * * *'`), not on every push
-   - Posts a structured metric summary comment on PRs touching `retriever.py`, `rag.py`, or `prompts.py`
-
-4. **Dependency** — add `deepeval` to `requirements-dev.txt`
+| Item | Status | Location |
+|---|---|---|
+| Golden dataset (9 cases, incl. multilingual) | ✅ Done | `tests/eval/golden_dataset.json` |
+| Eval test file | ✅ Done | `tests/eval/test_rag_quality.py` |
+| Nightly CI workflow | ✅ Done | `.github/workflows/eval.yml` |
+| `deepeval` dependency | ✅ Done | `requirements-dev.txt` |
 
 ---
 
-### P4b — DSPy Optimization Engine
+### P4b — DSPy Optimization Engine ✅
 
-`app/optimization/pipeline.py` and `app/optimization/optimize.py` are scaffolded but contain
-placeholders only. `DSPyRAGPipeline` is not a real DSPy program.
+| Item | Status | Location |
+|---|---|---|
+| `DSPyRAGPipeline` — real `dspy.Module` with `RAGSignature` | ✅ Done | `app/optimization/pipeline.py` |
+| Real DeepEval metric (Faithfulness + AnswerRelevancy) | ✅ Done | `app/optimization/optimize.py` |
+| `OpenRouterJudge` — custom DeepEval LLM judge | ✅ Done | `app/optimization/judge.py` |
+| `OptimizedPromptArtifact` dataclass + parser | ✅ Done | `app/optimization/pipeline.py` |
+| Artifact wired into `app/main.py` lifespan | ✅ Done | `app/main.py` |
+| Optimized instructions + demos consumed in prompts | ✅ Done | `app/utils/prompts.py` |
+| `dspy-ai` runtime dependency | ✅ Done | `requirements.txt` |
+| `scripts/run_optimization.py` — one-off trigger script | ✅ Done | `scripts/run_optimization.py` |
 
-**What to build:**
-
-1. Replace `DSPyRAGPipeline` with a real DSPy program:
-
-   ```python
-   class RAGSignature(dspy.Signature):
-       """Grounded answer generation from retrieval context."""
-       context: str = dspy.InputField()
-       history: str = dspy.InputField()
-       query: str = dspy.InputField()
-       answer: str = dspy.OutputField()
-
-   class DSPyRAGPipeline(dspy.Module):
-       def __init__(self):
-           self.generate = dspy.Predict(RAGSignature)
-       def forward(self, context, history, query):
-           return self.generate(context=context, history=history, query=query)
-   ```
-
-2. Replace the `return 1.0` stub metric in `optimize.py` with real DeepEval scores
-   (`Faithfulness` + `AnswerRelevancy`) — this is why DeepEval must come first.
-
-3. Wire artifact loading into `app/main.py` startup `lifespan` so optimized prompts
-   are applied at runtime without blocking the request path.
-
-4. Add `dspy-ai` to `requirements.txt` (runtime dependency).
-
-5. Add `scripts/run_optimization.py` for one-off / scheduled optimization runs.
-
----
-
-### P5 — Background Async Re-indexing
-
-`POST /ingest` is currently synchronous and blocks until indexing completes. At scale this will
-time out for large catalogs.
-
-**What to build:**
-
-- Use FastAPI `BackgroundTasks` (or ARQ for durability) to run ingest jobs out-of-band
-- Return a `job_id` immediately from `POST /ingest`
-- Expose `GET /ingest/{job_id}/status` → `{ status: "pending" | "running" | "done" | "error" }`
-
-**Files to touch:** `app/routers/ingest.py`, `app/models/schemas.py`
-
----
-
-## Suggested Priority Order
-
+**To run optimization:**
+```sh
+OPENROUTER_API_KEY=<key> .venv/bin/python scripts/run_optimization.py
 ```
-[Now]     P3  Background re-indexing          — independent, medium effort
-[Now]     P4a DeepEval harness + golden data   — prerequisite for DSPy
-[After]   P4b DSPy real pipeline + optimizer   — depends on P4a metric functions
-```
+Produces `artifacts/optimized_pipeline.json` — commit this file so the app loads it at startup.
 
-DSPy optimization (P4b) **must follow** DeepEval (P4a) — the golden dataset and metric
-functions from P4a become the training signal for the MIPROv2 optimizer.
+---
+
+### P5 — Background Async Re-indexing ✅
+
+| Item | Status | Location |
+|---|---|---|
+| `POST /ingest` uses `BackgroundTasks`, returns `job_id` immediately | ✅ Done | `app/routers/ingest.py` |
+| `GET /ingest/{job_id}/status` endpoint | ✅ Done | `app/routers/ingest.py` |
+| `IngestJobAccepted` / `IngestJobStatus` schemas | ✅ Done | `app/models/schemas.py` |
+
+---
+
+## No Remaining Work
+
+All P0–P5 items from the original gap analysis are complete. The DSPy offline optimization
+pipeline is the only operational step remaining — run `scripts/run_optimization.py` whenever
+the golden dataset or retrieval pipeline changes significantly, then commit the updated artifact.
 
 ---
 
