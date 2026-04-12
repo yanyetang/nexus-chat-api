@@ -28,7 +28,7 @@ graph TB
 
     subgraph Eval ["Evaluation & CI"]
         DeepEval["DeepEval Harness"]
-        GeminiJudge["Gemini Judge"]
+        OpenRouterJudge["OpenRouter Judge"]
         GHA[".github/workflows/eval.yml"]
     end
 
@@ -50,7 +50,7 @@ graph TB
     IngestEndpoint --> Embedder
     IngestEndpoint --> PG_Embed
 
-    DeepEval --> GeminiJudge
+    DeepEval --> OpenRouterJudge
     GHA --> DeepEval
 ```
 
@@ -158,7 +158,7 @@ sequenceDiagram
 - Async ingest jobs (`POST /ingest`) with job polling (`GET /ingest/{job_id}/status`)
 - DB bootstrap for `TSVECTOR` maintenance trigger + GIN index + IVFFlat vector index
 - DeepEval harness and nightly/PR workflow
-- DSPy optimization scaffold with offline artifact generation and startup artifact load
+- DSPy offline optimization with compiled instruction artifact load at startup
 
 ## Database Bootstrap
 
@@ -216,13 +216,29 @@ Optional:
 - Golden dataset: `tests/eval/golden_dataset.json`
 - CI workflow: `.github/workflows/eval.yml`
 - Offline optimization script: `scripts/run_optimization.py`
-- Runtime artifact load path: `artifacts/optimized_pipeline.json`
+- Compiled DSPy artifact: `artifacts/optimized_pipeline.json`
+- Optimization report: `artifacts/optimization_report.json`
 
 Run evaluation:
 
 ```bash
 pytest tests/eval -m deepeval -q
 ```
+
+Run offline optimization:
+
+```bash
+python scripts/run_optimization.py
+```
+
+Optimization expectations:
+
+- Requires `OPENROUTER_API_KEY` for both DSPy compilation and DeepEval judge scoring
+- Uses `OPENROUTER_CHAT_MODEL` for the generation model under optimization
+- Uses `OPENROUTER_JUDGE_MODEL` for faithfulness and answer relevancy scoring
+- Writes a compiled DSPy state file that the app loads on startup
+- Falls back to the baseline prompt path when the compiled artifact is absent
+- Treats malformed compiled artifacts as a startup error so bad prompt state is surfaced immediately
 
 ### Updating the Golden Dataset
 
@@ -237,11 +253,15 @@ Update `tests/eval/golden_dataset.json` when:
 
 Each sample must keep all six fields: `case_id`, `input`, `actual_output`, `expected_output`, `expected_product_ids`, `retrieval_context`.
 
-Generate optimization artifact:
+### Runtime Behavior
 
-```bash
-python scripts/run_optimization.py
-```
+At startup the API tries to load `artifacts/optimized_pipeline.json`.
+
+- If the file does not exist, chat uses the baseline prompt path in `app/utils/prompts.py`
+- If the file exists and is valid, chat appends the compiled DSPy instructions to the system prompt and uses any saved demos as few-shot reference examples
+- If the file exists but is malformed, startup fails loudly rather than silently serving unknown prompt state
+
+This keeps DSPy optimization offline while letting production requests consume the optimized instructions without moving DSPy compilation into the request path.
 
 ## Local Development
 
