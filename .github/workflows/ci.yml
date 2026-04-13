@@ -39,12 +39,10 @@ jobs:
           DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
           SUPPLIER_API_BASE_URL: https://placeholder.example.com
           COHERE_API_KEY: placeholder
-          OPENROUTER_API_KEY: placeholder
 
       - name: Tests
-        run: pytest tests/ -v
+        run: pytest tests/ -v -m "not deepeval"
         env:
           DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
           SUPPLIER_API_BASE_URL: https://placeholder.example.com
           COHERE_API_KEY: placeholder
-          OPENROUTER_API_KEY: placeholder

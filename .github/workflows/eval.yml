@@ -37,7 +37,7 @@ jobs:
       - name: Report evaluation mode
         run: |
           if [ -n "$GROQ_API_KEY" ] || [ -n "$OPENROUTER_API_KEY" ]; then
-            echo "DeepEval mode: live judge execution (judge API key present)."
+            echo "DeepEval mode: judge auth requested (non-empty credential present; suite will skip if auth is rejected)."
           else
             echo "DeepEval mode: skip-only run (no judge API key set)."
           fi
@@ -54,7 +54,7 @@ jobs:
             const body = [
               'DeepEval workflow completed.',
               liveMode
-                ? 'Mode: live judge execution (judge API key present).'
+                ? 'Mode: judge auth requested (non-empty credential present; suite skips if auth is rejected).'
                 : 'Mode: skip-only (no judge API key; tests intentionally skipped).',
               'See workflow logs for ContextualPrecision, ContextualRecall, Faithfulness, and AnswerRelevancy metric output.'
             ].join('\n');
