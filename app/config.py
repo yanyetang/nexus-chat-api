@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     supplier_api_base_url: str = Field(validation_alias="SUPPLIER_API_BASE_URL")
     cohere_api_key: str = Field(validation_alias="COHERE_API_KEY")
-    openrouter_api_key: str = Field(validation_alias="OPENROUTER_API_KEY")
+    openrouter_api_key: str | None = Field(default=None, validation_alias="OPENROUTER_API_KEY")
 
     chatbot_api_key: str | None = Field(default=None, validation_alias="CHATBOT_API_KEY")
     openrouter_chat_model: str = Field(
