@@ -46,7 +46,7 @@ There are three separate LLM roles — each uses a different model/key:
 - 9 parametrized cases from `tests/eval/golden_dataset.json` + 1 standalone no-match test = 10 total
 - Metrics: `FaithfulnessMetric` + `AnswerRelevancyMetric`, both threshold 0.5
 - Judge LLM is configured via `OpenRouterJudge(model, api_key, base_url)` — supports both OpenRouter and Groq via `base_url`
-- `DEEPEVAL_API_KEY` sends results to Confident AI platform (used in CI for PR comments)
+- `CONFIDENT_API_KEY` sends results to Confident AI platform (used in CI for PR comments)
 
 ## DSPy Optimization
 
