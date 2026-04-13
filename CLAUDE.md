@@ -24,20 +24,21 @@ Use `/pnpm-audit-fix` (manual skill) when audit vulnerabilities are reported.
 
 ## LLM Provider Configuration
 
+**Rule: configure model names in `app/config.py` defaults — not in `.env`.** `.env` is for secrets (API keys) only. This ensures the model selection is consistent across all environments.
+
 There are three separate LLM roles — each uses a different model/key:
 
-| Role | Config key | Used by | Notes |
-|------|-----------|---------|-------|
-| Chat | `OPENROUTER_CHAT_MODEL` | Every user message (production) | Requires paid OpenRouter credits; `openrouter/auto` selects expensive models — set a specific model |
-| Optimizer | `GROQ_OPTIMIZER_MODEL` / `OPENROUTER_OPTIMIZER_MODEL` | DSPy MIPROv2 (offline) | Groq preferred — free tier, reliable. litellm requires `groq/` prefix |
-| Judge | `GROQ_JUDGE_MODEL` / `OPENROUTER_JUDGE_MODEL` | DeepEval metrics (CI + optimization) | Groq preferred. Direct OpenAI-compatible API call — raw model name, no prefix |
+| Role      | Config key                                            | Used by                              |
+| --------- | ----------------------------------------------------- | ------------------------------------ | 
+| Chat      | `OPENROUTER_CHAT_MODEL`                               | Every user message (production)      | 
+| Optimizer | `GROQ_OPTIMIZER_MODEL` / `OPENROUTER_OPTIMIZER_MODEL` | DSPy MIPROv2 (offline)               | 
+| Judge     | `GROQ_JUDGE_MODEL` / `OPENROUTER_JUDGE_MODEL`         | DeepEval metrics (CI + optimization) | 
 
-**Priority:** When `GROQ_API_KEY` is set, `optimize.py` uses Groq for both optimizer and judge automatically.
 
 ### Known provider pitfalls
-- `openrouter/auto` routes to expensive models (Opus, Sonar) — drains credits in DSPy runs
-- OpenRouter free models (`:free` suffix) change availability frequently — check `https://openrouter.ai/api/v1/models` for current list
-- Gemini models have failed DeepEval judge scoring in testing — avoid as judge
+
+- `openrouter/auto` routes to expensive models (Opus, Sonar) — drains credits fast, do not use
+- Gemini free models have failed DeepEval judge scoring in testing — avoid as judge
 - Groq free tier limit is 12K TPM for `llama-3.3-70b-versatile` — DSPy trials may get 429s but optimization completes with the best successful trial
 
 ## DeepEval
