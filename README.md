@@ -389,8 +389,10 @@ sequenceDiagram
         pipeline-->>App: RuntimeError (startup fails loudly)
     end
 
-    App->>Chat: inject artifact into request handler
+    App->>App: cache artifact globally for runtime access
 
+    Chat->>App: get optimized artifact for this request
+    App-->>Chat: OptimizedPromptArtifact or None
     Chat->>Chat: build_system_prompt(artifact)
     note over Chat: baseline SYSTEM_PROMPT<br/>+ "Optimized answer policy:\n{instructions}"
 
