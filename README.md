@@ -233,6 +233,8 @@ Run evaluation:
 pytest tests/eval -m deepeval -q
 ```
 
+If no usable judge credential is configured, or the provider rejects the configured key, the DeepEval suite skips instead of failing the rest of CI.
+
 Run offline optimization:
 
 ```bash
