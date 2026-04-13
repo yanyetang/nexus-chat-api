@@ -34,10 +34,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-      - name: DeepEval login
-        if: env.DEEPEVAL_API_KEY != ''
-        run: deepeval login --api-key "$DEEPEVAL_API_KEY"
-
       - name: Report evaluation mode
         run: |
           if [ -n "$GROQ_API_KEY" ] || [ -n "$OPENROUTER_API_KEY" ]; then
