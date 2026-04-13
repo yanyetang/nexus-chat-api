@@ -315,7 +315,7 @@ DSPy is used **offline only** to automatically find a better system prompt instr
 | Term | What it is |
 |---|---|
 | **Signature** | Declares the LLM task: inputs (`context`, `history`, `query`) → output (`answer`), plus a docstring instruction |
-| **Module / Program** | A DSPy module wrapping a `Predict` call on the signature (`DSPyRAGPipeline` in `pipeline.py`) |
+| **Module / Program** | A DSPy module wrapping a `Predict` call on the signature (`DSPyRAGPipeline` in `app/optimization/pipeline.py`) |
 | **Trainset** | 9 `dspy.Example` objects built from `golden_dataset.json` |
 | **MIPROv2** | The optimizer — generates candidate instructions, runs trials, scores each with the metric function, keeps the best |
 | **Compiled artifact** | `artifacts/optimized_pipeline.json` — the saved module state containing the winning instruction text |
