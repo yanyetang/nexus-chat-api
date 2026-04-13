@@ -15,13 +15,13 @@ class Settings(BaseSettings):
 
     chatbot_api_key: str | None = Field(default=None, validation_alias="CHATBOT_API_KEY")
     openrouter_chat_model: str = Field(
-        default="openrouter/auto", validation_alias="OPENROUTER_CHAT_MODEL"
+        default="openai/gpt-4o-mini", validation_alias="OPENROUTER_CHAT_MODEL"
     )
     openrouter_judge_model: str = Field(
-        default="google/gemma-4-31b-it:free", validation_alias="OPENROUTER_JUDGE_MODEL"
+        default="openai/gpt-4o-mini", validation_alias="OPENROUTER_JUDGE_MODEL"
     )
     openrouter_optimizer_model: str = Field(
-        default="openrouter/google/gemma-4-31b-it:free",
+        default="openrouter/openai/gpt-4o-mini",  # fallback if GROQ_API_KEY not set; Groq is preferred
         validation_alias="OPENROUTER_OPTIMIZER_MODEL",
     )
     groq_api_key: str | None = Field(default=None, validation_alias="GROQ_API_KEY")
