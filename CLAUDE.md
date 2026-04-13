@@ -21,3 +21,35 @@ Context7 is configured — use it to fetch up-to-date library documentation when
 ## Fixing pnpm Audit Vulnerabilities
 
 Use `/pnpm-audit-fix` (manual skill) when audit vulnerabilities are reported.
+
+## LLM Provider Configuration
+
+There are three separate LLM roles — each uses a different model/key:
+
+| Role | Config key | Used by | Notes |
+|------|-----------|---------|-------|
+| Chat | `OPENROUTER_CHAT_MODEL` | Every user message (production) | Requires paid OpenRouter credits; `openrouter/auto` selects expensive models — set a specific model |
+| Optimizer | `GROQ_OPTIMIZER_MODEL` / `OPENROUTER_OPTIMIZER_MODEL` | DSPy MIPROv2 (offline) | Groq preferred — free tier, reliable. litellm requires `groq/` prefix |
+| Judge | `GROQ_JUDGE_MODEL` / `OPENROUTER_JUDGE_MODEL` | DeepEval metrics (CI + optimization) | Groq preferred. Direct OpenAI-compatible API call — raw model name, no prefix |
+
+**Priority:** When `GROQ_API_KEY` is set, `optimize.py` uses Groq for both optimizer and judge automatically.
+
+### Known provider pitfalls
+- `openrouter/auto` routes to expensive models (Opus, Sonar) — drains credits in DSPy runs
+- OpenRouter free models (`:free` suffix) change availability frequently — check `https://openrouter.ai/api/v1/models` for current list
+- Gemini models have failed DeepEval judge scoring in testing — avoid as judge
+- Groq free tier limit is 12K TPM for `llama-3.3-70b-versatile` — DSPy trials may get 429s but optimization completes with the best successful trial
+
+## DeepEval
+
+- 9 parametrized cases from `tests/eval/golden_dataset.json` + 1 standalone no-match test = 10 total
+- Metrics: `FaithfulnessMetric` + `AnswerRelevancyMetric`, both threshold 0.5
+- Judge LLM is configured via `OpenRouterJudge(model, api_key, base_url)` — supports both OpenRouter and Groq via `base_url`
+- `DEEPEVAL_API_KEY` sends results to Confident AI platform (used in CI for PR comments)
+
+## DSPy Optimization
+
+- Offline only — run `PYTHONPATH=. .venv/bin/python scripts/run_optimization.py` manually
+- Artifact (`artifacts/optimized_pipeline.json`) is gitignored — commit it for production or it falls back to baseline prompt
+- MIPROv2 `auto="light"`: 9 trials, 6 instruction candidates — takes ~5 min on Groq free tier
+- The artifact injects the optimized instruction into the system prompt at startup; app falls back gracefully if absent
