@@ -15,20 +15,21 @@ def _require_llm_judge_key() -> None:
 @pytest.fixture(scope="session")
 def llm_judge() -> Any:
     pytest.importorskip("deepeval")
-    from app.config import get_settings
     from app.optimization.judge import _GROQ_BASE_URL, _OPENROUTER_BASE_URL, OpenRouterJudge
 
-    settings = get_settings()
-    if settings.groq_api_key:
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+
+    if groq_api_key:
         return OpenRouterJudge(
-            model=settings.groq_judge_model,
-            api_key=settings.groq_api_key,
+            model=os.getenv("GROQ_JUDGE_MODEL", "llama-3.3-70b-versatile"),
+            api_key=groq_api_key,
             base_url=_GROQ_BASE_URL,
         )
-    assert settings.openrouter_api_key is not None
+    assert openrouter_api_key is not None
     return OpenRouterJudge(
-        model=settings.openrouter_judge_model,
-        api_key=settings.openrouter_api_key,
+        model=os.getenv("OPENROUTER_JUDGE_MODEL", "openai/gpt-4o-mini"),
+        api_key=openrouter_api_key,
         base_url=_OPENROUTER_BASE_URL,
     )
 
