@@ -327,7 +327,7 @@ DSPy is used **offline only** to automatically find a better system prompt instr
 sequenceDiagram
     participant Dev as Developer
     participant Script as scripts/run_optimization.py
-    participant Optimize as optimize.py
+    participant Optimize as app/optimization/optimize.py
     participant DSPy as DSPy MIPROv2
     participant OptimizerLLM as Optimizer LLM<br/>(generates instructions)
     participant Judge as Judge LLM<br/>(scores outputs)
