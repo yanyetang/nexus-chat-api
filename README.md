@@ -1,4 +1,4 @@
-# Chatbot API (Python RAG Backend)
+# nexus-chat-api (Python RAG Backend)
 
 FastAPI backend for product-grounded search and chat over a supplier catalog.
 
@@ -201,14 +201,22 @@ Required:
 Optional:
 
 - `CHATBOT_API_KEY`
-- `OPENROUTER_CHAT_MODEL` (default `openrouter/auto`)
-- `OPENROUTER_JUDGE_MODEL` (default `openai/gpt-4o-mini`, used by DeepEval eval harness)
+- `OPENROUTER_CHAT_MODEL` (default `openrouter/auto`) — **requires paid credits**; set a specific model to avoid `auto` routing to expensive providers
 - `ALLOWED_ORIGINS` (default `*`)
 - `RETRIEVAL_MIN_SCORE` (default `0.3`)
 - `RETRIEVAL_CANDIDATE_LIMIT` (default `20`)
 - `COHERE_RERANK_ENABLED` (default `true`)
 - `COHERE_RERANK_TOP_N` (default `5`)
 - `DB_AUTO_BOOTSTRAP` (default `true`)
+
+Optimization and evaluation (offline):
+
+- `GROQ_API_KEY` — preferred provider for DSPy + DeepEval (free tier, reliable); when set, takes priority over OpenRouter for optimization
+- `GROQ_OPTIMIZER_MODEL` (default `groq/llama-3.3-70b-versatile`)
+- `GROQ_JUDGE_MODEL` (default `llama-3.3-70b-versatile`)
+- `OPENROUTER_OPTIMIZER_MODEL` (default `openrouter/google/gemma-4-31b-it:free`) — fallback when no Groq key
+- `OPENROUTER_JUDGE_MODEL` (default `google/gemma-4-31b-it:free`) — fallback when no Groq key
+- `DEEPEVAL_API_KEY` — sends eval results to Confident AI platform (required for CI PR comments)
 
 ## Evaluation and Optimization
 
@@ -233,12 +241,15 @@ python scripts/run_optimization.py
 
 Optimization expectations:
 
-- Requires `OPENROUTER_API_KEY` for both DSPy compilation and DeepEval judge scoring
-- Uses `OPENROUTER_CHAT_MODEL` for the generation model under optimization
-- Uses `OPENROUTER_JUDGE_MODEL` for faithfulness and answer relevancy scoring
+- Prefers Groq (`GROQ_API_KEY`) over OpenRouter — free tier, reliable rate limits for DSPy's ~50 API calls
+- Falls back to OpenRouter when no Groq key is set
+- Uses `GROQ_OPTIMIZER_MODEL` / `OPENROUTER_OPTIMIZER_MODEL` for DSPy generation (litellm: requires provider prefix like `groq/...`)
+- Uses `GROQ_JUDGE_MODEL` / `OPENROUTER_JUDGE_MODEL` for DeepEval scoring (direct OpenAI-compatible API: raw model name, no prefix)
+- Groq free tier (12K TPM) may produce some 429 errors during trials — DSPy tolerates this and returns the best successful result
 - Writes a compiled DSPy state file that the app loads on startup
 - Falls back to the baseline prompt path when the compiled artifact is absent
 - Treats malformed compiled artifacts as a startup error so bad prompt state is surfaced immediately
+- The artifact (`artifacts/optimized_pipeline.json`) is gitignored — commit it to make it available in production
 
 ### Updating the Golden Dataset
 

@@ -11,14 +11,25 @@ class Settings(BaseSettings):
 
     supplier_api_base_url: str = Field(validation_alias="SUPPLIER_API_BASE_URL")
     cohere_api_key: str = Field(validation_alias="COHERE_API_KEY")
-    openrouter_api_key: str = Field(validation_alias="OPENROUTER_API_KEY")
+    openrouter_api_key: str | None = Field(default=None, validation_alias="OPENROUTER_API_KEY")
 
     chatbot_api_key: str | None = Field(default=None, validation_alias="CHATBOT_API_KEY")
     openrouter_chat_model: str = Field(
         default="openrouter/auto", validation_alias="OPENROUTER_CHAT_MODEL"
     )
     openrouter_judge_model: str = Field(
-        default="openai/gpt-4o-mini", validation_alias="OPENROUTER_JUDGE_MODEL"
+        default="google/gemma-4-31b-it:free", validation_alias="OPENROUTER_JUDGE_MODEL"
+    )
+    openrouter_optimizer_model: str = Field(
+        default="openrouter/google/gemma-4-31b-it:free",
+        validation_alias="OPENROUTER_OPTIMIZER_MODEL",
+    )
+    groq_api_key: str | None = Field(default=None, validation_alias="GROQ_API_KEY")
+    groq_optimizer_model: str = Field(
+        default="groq/llama-3.3-70b-versatile", validation_alias="GROQ_OPTIMIZER_MODEL"
+    )
+    groq_judge_model: str = Field(
+        default="llama-3.3-70b-versatile", validation_alias="GROQ_JUDGE_MODEL"
     )
     allowed_origins: str = Field(default="*", validation_alias="ALLOWED_ORIGINS")
     retrieval_min_score: float = Field(default=0.3, validation_alias="RETRIEVAL_MIN_SCORE")

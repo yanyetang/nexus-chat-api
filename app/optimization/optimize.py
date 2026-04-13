@@ -9,6 +9,7 @@ from app.optimization.pipeline import DSPyRAGPipeline
 
 _ARTIFACT_PATH = Path("artifacts/optimized_pipeline.json")
 _OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+_GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 
 
 def _joined_context(example: dict[str, Any]) -> str:
@@ -46,28 +47,38 @@ def compile_optimized_pipeline(golden_dataset: list[dict[str, Any]]) -> dict[str
         }
 
     settings = get_settings()
-    api_key = settings.openrouter_api_key
-    if not api_key:
+
+    # Prefer Groq when available (free tier, reliable rate limits)
+    if settings.groq_api_key:
+        api_key = settings.groq_api_key
+        optimizer_model = settings.groq_optimizer_model
+        judge_model = settings.groq_judge_model
+        judge_base_url = _GROQ_BASE_URL
+        lm_api_base = None  # litellm resolves groq/ prefix natively
+    elif settings.openrouter_api_key:
+        api_key = settings.openrouter_api_key
+        optimizer_model = settings.openrouter_optimizer_model
+        judge_model = settings.openrouter_judge_model
+        judge_base_url = _OPENROUTER_BASE_URL
+        lm_api_base = _OPENROUTER_BASE_URL
+    else:
         return {
             "optimizer": "dspy.MIPROv2",
             "dataset_size": len(golden_dataset),
             "generated_at": datetime.now(UTC).isoformat(),
-            "status": "missing_openrouter_api_key",
+            "status": "missing_api_key",
         }
 
-    chat_model = settings.openrouter_chat_model
-    judge_model = settings.openrouter_judge_model
+    lm_kwargs: dict[str, Any] = {
+        "api_key": api_key,
+        "cache": True,
+        "temperature": 0.0,
+        "max_tokens": 512,
+    }
+    if lm_api_base:
+        lm_kwargs["api_base"] = lm_api_base
 
-    dspy.configure(
-        lm=dspy.LM(
-            chat_model,
-            api_key=api_key,
-            api_base=_OPENROUTER_BASE_URL,
-            cache=True,
-            temperature=0.0,
-            max_tokens=512,
-        )
-    )
+    dspy.configure(lm=dspy.LM(optimizer_model, **lm_kwargs))
 
     try:
         from app.optimization.judge import OpenRouterJudge
@@ -79,7 +90,7 @@ def compile_optimized_pipeline(golden_dataset: list[dict[str, Any]]) -> dict[str
             "status": "judge_not_available",
         }
 
-    judge = OpenRouterJudge(model=judge_model, api_key=api_key)
+    judge = OpenRouterJudge(model=judge_model, api_key=api_key, base_url=judge_base_url)
 
     def _metric(example: Any, prediction: Any, trace=None) -> float:  # noqa: ANN001
         del trace
@@ -129,7 +140,7 @@ def compile_optimized_pipeline(golden_dataset: list[dict[str, Any]]) -> dict[str
         "generated_at": datetime.now(UTC).isoformat(),
         "status": "compiled",
         "artifact": str(_ARTIFACT_PATH),
-        "model": chat_model,
+        "model": optimizer_model,
         "judge_model": judge_model,
         "instruction_preview": instructions[:240],
         "metric": "faithfulness_plus_answer_relevancy",
