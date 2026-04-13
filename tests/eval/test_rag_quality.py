@@ -35,7 +35,7 @@ def test_rag_quality_contract(sample: dict[str, Any], deepeval_metrics: list[Any
 
 
 @pytest.mark.deepeval
-def test_no_match_faithfulness(openrouter_judge: Any) -> None:
+def test_no_match_faithfulness(llm_judge: Any) -> None:
     """When retrieval returns nothing the model must not hallucinate products."""
     pytest.importorskip("deepeval")
 
@@ -51,5 +51,5 @@ def test_no_match_faithfulness(openrouter_judge: Any) -> None:
     )
     assert_test(
         test_case=test_case,
-        metrics=[FaithfulnessMetric(model=openrouter_judge, threshold=0.5, include_reason=True)],
+        metrics=[FaithfulnessMetric(model=llm_judge, threshold=0.5, include_reason=True)],
     )

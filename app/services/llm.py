@@ -25,6 +25,9 @@ class LLMService:
             "stream": True,
         }
 
+        if not self._api_key:
+            raise ExternalServiceError("OpenRouter API key not configured")
+
         try:
             async with httpx.AsyncClient(timeout=120) as client:
                 async with client.stream(
