@@ -361,8 +361,8 @@ sequenceDiagram
     DSPy-->>Optimize: optimized_program (best instruction)
 
     Optimize->>FS: optimized_program.save("artifacts/optimized_pipeline.json")
-    Optimize->>FS: save_artifact(report, "artifacts/optimization_report.json")
     Optimize-->>Script: report dict
+    Script->>FS: save_artifact(report, "artifacts/optimization_report.json")
 
     Script->>Dev: print instruction preview
 ```
