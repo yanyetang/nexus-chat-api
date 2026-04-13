@@ -10,6 +10,7 @@ _GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 class OpenRouterJudge(DeepEvalBaseLLM):
     def __init__(self, model: str, api_key: str, base_url: str = _OPENROUTER_BASE_URL) -> None:
         self._model = model
+        api_key = api_key.strip()
         self._client = OpenAI(base_url=base_url, api_key=api_key)
         self._async_client = AsyncOpenAI(base_url=base_url, api_key=api_key)
 
