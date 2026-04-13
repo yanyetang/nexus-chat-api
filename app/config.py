@@ -3,6 +3,10 @@ from functools import lru_cache
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Default model names — import these in tests instead of duplicating the strings
+GROQ_JUDGE_MODEL_DEFAULT = "llama-3.3-70b-versatile"
+OPENROUTER_JUDGE_MODEL_DEFAULT = "openai/gpt-4o-mini"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
@@ -18,7 +22,7 @@ class Settings(BaseSettings):
         default="openai/gpt-4o-mini", validation_alias="OPENROUTER_CHAT_MODEL"
     )
     openrouter_judge_model: str = Field(
-        default="openai/gpt-4o-mini", validation_alias="OPENROUTER_JUDGE_MODEL"
+        default=OPENROUTER_JUDGE_MODEL_DEFAULT, validation_alias="OPENROUTER_JUDGE_MODEL"
     )
     openrouter_optimizer_model: str = Field(
         default="openrouter/openai/gpt-4o-mini",  # fallback if GROQ_API_KEY not set; Groq is preferred
@@ -29,7 +33,7 @@ class Settings(BaseSettings):
         default="groq/llama-3.3-70b-versatile", validation_alias="GROQ_OPTIMIZER_MODEL"
     )
     groq_judge_model: str = Field(
-        default="llama-3.3-70b-versatile", validation_alias="GROQ_JUDGE_MODEL"
+        default=GROQ_JUDGE_MODEL_DEFAULT, validation_alias="GROQ_JUDGE_MODEL"
     )
     allowed_origins: str = Field(default="*", validation_alias="ALLOWED_ORIGINS")
     retrieval_min_score: float = Field(default=0.3, validation_alias="RETRIEVAL_MIN_SCORE")
