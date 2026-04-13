@@ -218,6 +218,196 @@ Optimization and evaluation (offline):
 - `OPENROUTER_JUDGE_MODEL` (default `google/gemma-4-31b-it:free`) — fallback when no Groq key
 - `CONFIDENT_API_KEY` — sends eval results to Confident AI platform (required for CI PR comments)
 
+## How DeepEval Works
+
+DeepEval is used to measure RAG quality without a human in the loop. A judge LLM scores each response against four criteria.
+
+### Concepts
+
+| Term | What it is |
+|---|---|
+| **LLMTestCase** | One input + actual output + expected output + retrieval context tuple |
+| **Golden dataset** | 9 hand-written test cases in `tests/eval/golden_dataset.json` |
+| **Judge LLM** | A separate LLM (Groq or OpenRouter) that scores responses; configured via `OpenRouterJudge` in `app/optimization/judge.py` |
+| **Metric** | A scoring class (Faithfulness, AnswerRelevancy, ContextualPrecision, ContextualRecall) — each produces a 0–1 score |
+| **Threshold** | `0.5` — a metric passes if its score ≥ threshold |
+| **Confident AI** | Optional cloud dashboard; receives results when `CONFIDENT_API_KEY` is set |
+
+### Metrics explained
+
+- **Faithfulness** — does the answer contain only claims that are grounded in the retrieval context? (detects hallucination)
+- **AnswerRelevancy** — is the answer on-topic given the input question?
+- **ContextualPrecision** — are the retrieved chunks ranked with the most relevant ones first?
+- **ContextualRecall** — do the retrieved chunks collectively cover the expected answer?
+
+### DeepEval sequence — CI run
+
+```mermaid
+sequenceDiagram
+    participant GHA as GitHub Actions
+    participant pytest as pytest
+    participant conftest as conftest.py
+    participant Judge as Judge LLM<br/>(Groq / OpenRouter)
+    participant DeepEval as DeepEval SDK
+    participant Confident as Confident AI<br/>(optional)
+
+    GHA->>pytest: pytest tests/eval -m deepeval
+
+    pytest->>conftest: _require_llm_judge_key (autouse)
+    alt no usable API key
+        conftest-->>pytest: pytest.skip (all 10 tests skipped)
+    end
+
+    conftest->>Judge: generate("Reply with OK.") — probe call
+    alt credentials rejected
+        Judge-->>conftest: AuthenticationError
+        conftest-->>pytest: pytest.skip
+    end
+
+    loop 9 parametrized cases from golden_dataset.json
+        pytest->>DeepEval: assert_test(LLMTestCase, [4 metrics])
+        loop Each metric (Faithfulness, AnswerRelevancy, ContextualPrecision, ContextualRecall)
+            DeepEval->>Judge: score prompt (async)
+            Judge-->>DeepEval: 0–1 score + reason
+        end
+        DeepEval-->>pytest: pass / fail per metric
+    end
+
+    pytest->>DeepEval: assert_test(no-match case, [Faithfulness only])
+    DeepEval->>Judge: score prompt
+    Judge-->>DeepEval: score
+    DeepEval-->>pytest: pass / fail
+
+    opt CONFIDENT_API_KEY set
+        DeepEval->>Confident: upload all test results
+        Confident-->>DeepEval: dashboard URL
+    end
+
+    pytest-->>GHA: exit 0 (all pass) or exit 1 (any fail)
+```
+
+### DeepEval sequence — DSPy optimization (offline metric)
+
+During optimization, DeepEval acts as the **scoring function** for each DSPy trial (not a full test run):
+
+```mermaid
+sequenceDiagram
+    participant MIPROv2 as DSPy MIPROv2
+    participant metric as _metric()
+    participant Judge as Judge LLM
+
+    MIPROv2->>metric: _metric(example, prediction)
+    metric->>Judge: FaithfulnessMetric.measure(test_case)
+    Judge-->>metric: faithfulness score
+    metric->>Judge: AnswerRelevancyMetric.measure(test_case)
+    Judge-->>metric: relevancy score
+    metric-->>MIPROv2: (faithfulness + relevancy) / 2
+```
+
+---
+
+## How DSPy Works
+
+DSPy is used **offline only** to automatically find a better system prompt instruction. The result is saved as a JSON artifact that the API loads at startup.
+
+### Concepts
+
+| Term | What it is |
+|---|---|
+| **Signature** | Declares the LLM task: inputs (`context`, `history`, `query`) → output (`answer`), plus a docstring instruction |
+| **Module / Program** | A DSPy module wrapping a `Predict` call on the signature (`DSPyRAGPipeline` in `pipeline.py`) |
+| **Trainset** | 9 `dspy.Example` objects built from `golden_dataset.json` |
+| **MIPROv2** | The optimizer — generates candidate instructions, runs trials, scores each with the metric function, keeps the best |
+| **Compiled artifact** | `artifacts/optimized_pipeline.json` — the saved module state containing the winning instruction text |
+| **Baseline prompt** | The hardcoded `SYSTEM_PROMPT` in `app/utils/prompts.py`, used when no artifact is present |
+
+### Optimization sequence (run once, offline)
+
+```mermaid
+sequenceDiagram
+    participant Dev as Developer
+    participant Script as scripts/run_optimization.py
+    participant Optimize as optimize.py
+    participant DSPy as DSPy MIPROv2
+    participant OptimizerLLM as Optimizer LLM<br/>(generates instructions)
+    participant Judge as Judge LLM<br/>(scores outputs)
+    participant FS as Filesystem
+
+    Dev->>Script: python scripts/run_optimization.py
+
+    Script->>FS: read tests/eval/golden_dataset.json
+    FS-->>Script: 9 samples
+
+    Script->>Optimize: compile_optimized_pipeline(golden_dataset)
+
+    Optimize->>DSPy: dspy.configure(lm=OptimizerLLM)
+    Optimize->>DSPy: MIPROv2(metric=_metric, auto="light")
+    Optimize->>DSPy: teleprompter.compile(DSPyRAGPipeline, trainset)
+
+    loop ~9 trials (auto="light")
+        DSPy->>OptimizerLLM: generate candidate instruction variant
+        OptimizerLLM-->>DSPy: instruction text
+
+        loop Each trainset example
+            DSPy->>OptimizerLLM: run DSPyRAGPipeline.forward(context, history, query)
+            OptimizerLLM-->>DSPy: answer prediction
+            DSPy->>Judge: _metric(example, prediction)
+            Judge-->>DSPy: combined score (faithfulness + relevancy) / 2
+        end
+
+        DSPy->>DSPy: record trial score
+    end
+
+    DSPy-->>Optimize: optimized_program (best instruction)
+
+    Optimize->>FS: optimized_program.save("artifacts/optimized_pipeline.json")
+    Optimize->>FS: save_artifact(report, "artifacts/optimization_report.json")
+    Optimize-->>Script: report dict
+
+    Script->>Dev: print instruction preview
+```
+
+### Startup — artifact load
+
+```mermaid
+sequenceDiagram
+    participant App as FastAPI startup
+    participant pipeline as pipeline.py
+    participant FS as Filesystem
+    participant Chat as /chat handler
+
+    App->>pipeline: load_optimized_artifact()
+
+    alt artifact file absent
+        pipeline-->>App: None (baseline mode)
+    else artifact exists, valid JSON
+        pipeline->>FS: read artifacts/optimized_pipeline.json
+        FS-->>pipeline: JSON payload
+        pipeline->>pipeline: parse instructions + demos
+        pipeline-->>App: OptimizedPromptArtifact
+    else artifact exists, malformed
+        pipeline-->>App: RuntimeError (startup fails loudly)
+    end
+
+    App->>Chat: inject artifact into request handler
+
+    Chat->>Chat: build_system_prompt(artifact)
+    note over Chat: baseline SYSTEM_PROMPT<br/>+ "Optimized answer policy:\n{instructions}"
+
+    Chat->>Chat: build_user_prompt(context_block, message, artifact)
+    note over Chat: prepends up to 2 demo examples<br/>when artifact.demos is non-empty
+```
+
+### What the optimized instruction changes
+
+The baseline prompt (`SYSTEM_PROMPT`) allows general knowledge answers and gives no format guidance. The artifact instruction produced by MIPROv2 adds strict rules:
+
+| Aspect | Baseline | Optimized |
+|---|---|---|
+| Grounding | "answer from your knowledge" allowed for off-topic questions | Only context or history — state clearly if insufficient |
+| Format | None specified | List each product separately: brand, model, size, color, price, stock |
+| Multiple matches | No guidance | List each option separately with a brief description |
+
 ## Evaluation and Optimization
 
 - DeepEval suite: `tests/eval/test_rag_quality.py`
