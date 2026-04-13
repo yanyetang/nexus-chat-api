@@ -246,7 +246,7 @@ DeepEval is used to measure RAG quality without a human in the loop. A judge LLM
 sequenceDiagram
     participant GHA as GitHub Actions
     participant pytest as pytest
-    participant conftest as conftest.py
+    participant conftest as tests/eval/conftest.py
     participant Judge as Judge LLM<br/>(Groq / OpenRouter)
     participant DeepEval as DeepEval SDK
     participant Confident as Confident AI<br/>(optional)
