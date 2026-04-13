@@ -17,6 +17,7 @@ jobs:
       contents: read
       pull-requests: write
     env:
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       DEEPEVAL_API_KEY: ${{ secrets.DEEPEVAL_API_KEY }}
     steps:
@@ -26,7 +27,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.14"
+          python-version: "3.12"
 
       - name: Install dependencies
         run: |
@@ -39,10 +40,10 @@ jobs:
 
       - name: Report evaluation mode
         run: |
-          if [ -n "$OPENROUTER_API_KEY" ]; then
-            echo "DeepEval mode: live judge execution (OPENROUTER_API_KEY present)."
+          if [ -n "$GROQ_API_KEY" ] || [ -n "$OPENROUTER_API_KEY" ]; then
+            echo "DeepEval mode: live judge execution (judge API key present)."
           else
-            echo "DeepEval mode: skip-only run (OPENROUTER_API_KEY missing)."
+            echo "DeepEval mode: skip-only run (no judge API key set)."
           fi
 
       - name: Run RAG evaluation suite
