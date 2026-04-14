@@ -30,43 +30,32 @@ def _read_judge_api_key(env_var_name: str) -> str | None:
 
 @pytest.fixture(scope="session", autouse=True)
 def _require_llm_judge_key() -> None:
-    if not _read_judge_api_key("GROQ_API_KEY") and not _read_judge_api_key("OPENROUTER_API_KEY"):
+    if not _read_judge_api_key("OPENROUTER_API_KEY"):
         pytest.skip(
-            "Neither GROQ_API_KEY nor OPENROUTER_API_KEY contains a usable value; skipping DeepEval judge evaluation"
+            "OPENROUTER_API_KEY is not set or contains a placeholder; skipping DeepEval judge evaluation"
         )
 
 
 @pytest.fixture(scope="session")
 def llm_judge() -> Any:
     pytest.importorskip("deepeval")
-    from app.config import GROQ_JUDGE_MODEL_DEFAULT, OPENROUTER_JUDGE_MODEL_DEFAULT
-    from app.optimization.judge import _GROQ_BASE_URL, _OPENROUTER_BASE_URL, OpenRouterJudge
+    from app.config import OPENROUTER_JUDGE_MODEL_DEFAULT
+    from app.optimization.judge import _OPENROUTER_BASE_URL, OpenRouterJudge
 
-    groq_api_key = _read_judge_api_key("GROQ_API_KEY")
     openrouter_api_key = _read_judge_api_key("OPENROUTER_API_KEY")
+    assert openrouter_api_key is not None
 
-    provider_name: str
-    if groq_api_key:
-        provider_name = "Groq"
-        judge = OpenRouterJudge(
-            model=os.getenv("GROQ_JUDGE_MODEL", GROQ_JUDGE_MODEL_DEFAULT),
-            api_key=groq_api_key,
-            base_url=_GROQ_BASE_URL,
-        )
-    else:
-        assert openrouter_api_key is not None
-        provider_name = "OpenRouter"
-        judge = OpenRouterJudge(
-            model=os.getenv("OPENROUTER_JUDGE_MODEL", OPENROUTER_JUDGE_MODEL_DEFAULT),
-            api_key=openrouter_api_key,
-            base_url=_OPENROUTER_BASE_URL,
-        )
+    judge = OpenRouterJudge(
+        model=os.getenv("OPENROUTER_JUDGE_MODEL", OPENROUTER_JUDGE_MODEL_DEFAULT),
+        api_key=openrouter_api_key,
+        base_url=_OPENROUTER_BASE_URL,
+    )
 
     try:
         judge.generate("Reply with OK.")
     except AuthenticationError:
         pytest.skip(
-            f"{provider_name} judge credentials were rejected by the provider; skipping DeepEval judge evaluation"
+            "OpenRouter judge credentials were rejected by the provider; skipping DeepEval judge evaluation"
         )
 
     return judge

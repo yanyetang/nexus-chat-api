@@ -36,10 +36,10 @@ jobs:
 
       - name: Report evaluation mode
         run: |
-          if [ -n "$GROQ_API_KEY" ] || [ -n "$OPENROUTER_API_KEY" ]; then
-            echo "DeepEval mode: judge auth requested (non-empty credential present; suite will skip if auth is rejected)."
+          if [ -n "$OPENROUTER_API_KEY" ]; then
+            echo "DeepEval mode: judge auth requested via OpenRouter (suite will skip if auth is rejected)."
           else
-            echo "DeepEval mode: skip-only run (no judge API key set)."
+            echo "DeepEval mode: skip-only run (OPENROUTER_API_KEY not set)."
           fi
 
       - name: Run RAG evaluation suite
@@ -50,12 +50,12 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
-            const liveMode = !!(process.env.GROQ_API_KEY || process.env.OPENROUTER_API_KEY);
+            const liveMode = !!process.env.OPENROUTER_API_KEY;
             const body = [
               'DeepEval workflow completed.',
               liveMode
-                ? 'Mode: judge auth requested (non-empty credential present; suite skips if auth is rejected).'
-                : 'Mode: skip-only (no judge API key; tests intentionally skipped).',
+                ? 'Mode: judge auth requested via OpenRouter (suite skips if auth is rejected).'
+                : 'Mode: skip-only (OPENROUTER_API_KEY not set; tests intentionally skipped).',
               'See workflow logs for ContextualPrecision, ContextualRecall, Faithfulness, and AnswerRelevancy metric output.'
             ].join('\n');
             github.rest.issues.createComment({
