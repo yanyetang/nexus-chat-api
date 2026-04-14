@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Default model names — import these in tests instead of duplicating the strings
 GROQ_JUDGE_MODEL_DEFAULT = "llama-3.3-70b-versatile"
-OPENROUTER_JUDGE_MODEL_DEFAULT = "openai/gpt-4o-mini"
+OPENROUTER_JUDGE_MODEL_DEFAULT = "google/gemini-2.0-flash-001"
 
 
 class Settings(BaseSettings):
