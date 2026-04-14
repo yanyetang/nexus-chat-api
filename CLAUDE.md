@@ -28,17 +28,17 @@ Use `/pnpm-audit-fix` (manual skill) when audit vulnerabilities are reported.
 
 There are three separate LLM roles — each uses a different model/key:
 
-| Role      | Config key                                            | Used by                              |
-| --------- | ----------------------------------------------------- | ------------------------------------ | 
-| Chat      | `OPENROUTER_CHAT_MODEL`                               | Every user message (production)      | 
-| Optimizer | `GROQ_OPTIMIZER_MODEL` / `OPENROUTER_OPTIMIZER_MODEL` | DSPy MIPROv2 (offline)               | 
-| Judge     | `GROQ_JUDGE_MODEL` / `OPENROUTER_JUDGE_MODEL`         | DeepEval metrics (CI + optimization) | 
+| Role      | Config key                                            | Default                                  | Used by                              |
+| --------- | ----------------------------------------------------- | ---------------------------------------- | ------------------------------------ |
+| Chat      | `OPENROUTER_CHAT_MODEL`                               | `openai/gpt-4o-mini`                     | Every user message (production)      |
+| Optimizer | `GROQ_OPTIMIZER_MODEL` / `OPENROUTER_OPTIMIZER_MODEL` | `groq/llama-3.3-70b-versatile`           | DSPy MIPROv2 (offline)               |
+| Judge     | `GROQ_JUDGE_MODEL` / `OPENROUTER_JUDGE_MODEL`         | `llama-3.3-70b-versatile` / `google/gemini-2.0-flash-001` | DeepEval metrics (CI + optimization) |
 
 
 ### Known provider pitfalls
 
 - `openrouter/auto` routes to expensive models (Opus, Sonar) — drains credits fast, do not use
-- Gemini free models have failed DeepEval judge scoring in testing — avoid as judge
+- Gemini free models have failed DeepEval judge scoring in testing — avoid as judge; paid Gemini (e.g. `google/gemini-2.0-flash-001`) works fine
 - Groq free tier limit is 12K TPM for `llama-3.3-70b-versatile` — DSPy trials may get 429s but optimization completes with the best successful trial
 
 ## DeepEval

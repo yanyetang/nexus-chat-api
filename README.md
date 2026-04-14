@@ -215,7 +215,7 @@ Optimization and evaluation (offline):
 - `GROQ_OPTIMIZER_MODEL` (default `groq/llama-3.3-70b-versatile`)
 - `GROQ_JUDGE_MODEL` (default `llama-3.3-70b-versatile`)
 - `OPENROUTER_OPTIMIZER_MODEL` (default `openrouter/google/gemma-4-31b-it:free`) — fallback when no Groq key
-- `OPENROUTER_JUDGE_MODEL` (default `google/gemma-4-31b-it:free`) — fallback when no Groq key
+- `OPENROUTER_JUDGE_MODEL` (default `google/gemini-2.0-flash-001`) — fallback when no Groq key
 - `CONFIDENT_API_KEY` — sends eval results to Confident AI platform (required for CI PR comments)
 
 ## How DeepEval Works
