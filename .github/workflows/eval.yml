@@ -49,7 +49,7 @@ jobs:
           fi
 
       - name: Run RAG evaluation suite
-        run: pytest tests/eval -m deepeval -q -rs
+        run: deepeval test run tests/eval/test_rag_quality.py -v
 
       - name: PR summary
         if: github.event_name == 'pull_request'
