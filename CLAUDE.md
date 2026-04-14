@@ -44,9 +44,11 @@ There are three separate LLM roles — each uses a different model/key:
 ## DeepEval
 
 - 9 parametrized cases from `tests/eval/golden_dataset.json` + 1 standalone no-match test = 10 total
-- Metrics: `ContextualPrecisionMetric`, `ContextualRecallMetric`, `FaithfulnessMetric`, `AnswerRelevancyMetric` — all threshold 0.5
-- Judge LLM uses OpenRouter only (`OPENROUTER_API_KEY`) — Groq is intentionally excluded due to free-tier TPM limits failing multi-metric eval
+- Judge LLM uses OpenRouter (`OPENROUTER_API_KEY`) — Groq is intentionally excluded due to free-tier TPM limits failing multi-metric eval
 - `CONFIDENT_API_KEY` sends results to Confident AI platform (used in CI for PR comments)
+- `pytest.ini` sets `addopts = -m "not deepeval"` — always pass `-m deepeval` explicitly when running eval tests, including in CI
+- `deepeval test run` does not override `addopts`, so use `pytest tests/eval -m deepeval` in CI, not `deepeval test run`
+
 
 ## DSPy Optimization
 
