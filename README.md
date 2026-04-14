@@ -211,11 +211,11 @@ Optional:
 
 Optimization and evaluation (offline):
 
-- `GROQ_API_KEY` — preferred provider for DSPy + DeepEval (free tier, reliable); when set, takes priority over OpenRouter for optimization
+- `GROQ_API_KEY` — DSPy optimizer only (free tier, preferred for generation); never used for judging
 - `GROQ_OPTIMIZER_MODEL` (default `groq/llama-3.3-70b-versatile`)
-- `GROQ_JUDGE_MODEL` (default `llama-3.3-70b-versatile`)
-- `OPENROUTER_OPTIMIZER_MODEL` (default `openrouter/google/gemma-4-31b-it:free`) — fallback when no Groq key
-- `OPENROUTER_JUDGE_MODEL` (default `google/gemma-4-31b-it:free`) — fallback when no Groq key
+- `OPENROUTER_API_KEY` — required for judging (both CI eval and DSPy optimization); also fallback optimizer when no Groq key
+- `OPENROUTER_OPTIMIZER_MODEL` (default `openrouter/openai/gpt-4o-mini`) — used when no Groq key
+- `OPENROUTER_JUDGE_MODEL` (default `google/gemini-2.0-flash-001`) — always used for DeepEval scoring regardless of whether Groq is set
 - `CONFIDENT_API_KEY` — sends eval results to Confident AI platform (required for CI PR comments)
 
 ## How DeepEval Works
@@ -228,7 +228,7 @@ DeepEval is used to measure RAG quality without a human in the loop. A judge LLM
 |---|---|
 | **LLMTestCase** | One input + actual output + expected output + retrieval context tuple |
 | **Golden dataset** | 9 hand-written test cases in `tests/eval/golden_dataset.json` |
-| **Judge LLM** | A separate LLM (Groq or OpenRouter) that scores responses; configured via `OpenRouterJudge` in `app/optimization/judge.py` |
+| **Judge LLM** | A separate LLM (OpenRouter only) that scores responses; configured via `OpenRouterJudge` in `app/optimization/judge.py` |
 | **Metric** | A scoring class (Faithfulness, AnswerRelevancy, ContextualPrecision, ContextualRecall) — each produces a 0–1 score |
 | **Threshold** | `0.5` — a metric passes if its score ≥ threshold |
 | **Confident AI** | Optional cloud dashboard; receives results when `CONFIDENT_API_KEY` is set |
@@ -247,14 +247,14 @@ sequenceDiagram
     participant GHA as GitHub Actions
     participant pytest as pytest
     participant conftest as tests/eval/conftest.py
-    participant Judge as Judge LLM<br/>(Groq / OpenRouter)
+    participant Judge as Judge LLM<br/>(OpenRouter)
     participant DeepEval as DeepEval SDK
     participant Confident as Confident AI<br/>(optional)
 
     GHA->>pytest: pytest tests/eval -m deepeval
 
     pytest->>conftest: _require_llm_judge_key (autouse)
-    alt no usable API key
+    alt OPENROUTER_API_KEY not set or placeholder
         conftest-->>pytest: pytest.skip (all 10 tests skipped)
     end
 

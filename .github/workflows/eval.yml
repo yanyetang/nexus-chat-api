@@ -36,10 +36,16 @@ jobs:
 
       - name: Report evaluation mode
         run: |
-          if [ -n "$GROQ_API_KEY" ] || [ -n "$OPENROUTER_API_KEY" ]; then
-            echo "DeepEval mode: judge auth requested (non-empty credential present; suite will skip if auth is rejected)."
+          _placeholders="placeholder dummy test example your_api_key none null"
+          _key_lc=$(echo "${OPENROUTER_API_KEY}" | tr '[:upper:]' '[:lower:]' | xargs)
+          _is_placeholder=false
+          for _p in $_placeholders; do
+            [ "$_key_lc" = "$_p" ] && _is_placeholder=true && break
+          done
+          if [ -n "$OPENROUTER_API_KEY" ] && [ "$_is_placeholder" = "false" ]; then
+            echo "DeepEval mode: live judge via OpenRouter (suite will skip if credentials are rejected)."
           else
-            echo "DeepEval mode: skip-only run (no judge API key set)."
+            echo "DeepEval mode: skip-only run (OPENROUTER_API_KEY not set or is a placeholder)."
           fi
 
       - name: Run RAG evaluation suite
@@ -50,12 +56,14 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
-            const liveMode = !!(process.env.GROQ_API_KEY || process.env.OPENROUTER_API_KEY);
+            const placeholders = new Set(['placeholder','dummy','test','example','your_api_key','none','null']);
+            const rawKey = (process.env.OPENROUTER_API_KEY || '').trim().toLowerCase();
+            const liveMode = rawKey.length > 0 && !placeholders.has(rawKey);
             const body = [
               'DeepEval workflow completed.',
               liveMode
-                ? 'Mode: judge auth requested (non-empty credential present; suite skips if auth is rejected).'
-                : 'Mode: skip-only (no judge API key; tests intentionally skipped).',
+                ? 'Mode: live judge via OpenRouter (suite skips if credentials are rejected).'
+                : 'Mode: skip-only (OPENROUTER_API_KEY not set or is a placeholder; tests intentionally skipped).',
               'See workflow logs for ContextualPrecision, ContextualRecall, Faithfulness, and AnswerRelevancy metric output.'
             ].join('\n');
             github.rest.issues.createComment({
