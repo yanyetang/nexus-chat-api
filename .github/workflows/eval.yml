@@ -48,8 +48,11 @@ jobs:
             echo "DeepEval mode: skip-only run (OPENROUTER_API_KEY not set or is a placeholder)."
           fi
 
+      - name: Login to Confident AI
+        run: deepeval login --confident-api-key "$CONFIDENT_API_KEY"
+
       - name: Run RAG evaluation suite
-        run: deepeval test run tests/eval/test_rag_quality.py -v
+        run: pytest tests/eval -m deepeval -v -rs
 
       - name: PR summary
         if: github.event_name == 'pull_request'
