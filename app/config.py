@@ -4,7 +4,6 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Default model names — import these in tests instead of duplicating the strings
-GROQ_JUDGE_MODEL_DEFAULT = "llama-3.3-70b-versatile"
 OPENROUTER_JUDGE_MODEL_DEFAULT = "google/gemini-2.0-flash-001"
 
 
@@ -31,9 +30,6 @@ class Settings(BaseSettings):
     groq_api_key: str | None = Field(default=None, validation_alias="GROQ_API_KEY")
     groq_optimizer_model: str = Field(
         default="groq/llama-3.3-70b-versatile", validation_alias="GROQ_OPTIMIZER_MODEL"
-    )
-    groq_judge_model: str = Field(
-        default=GROQ_JUDGE_MODEL_DEFAULT, validation_alias="GROQ_JUDGE_MODEL"
     )
     allowed_origins: str = Field(default="*", validation_alias="ALLOWED_ORIGINS")
     retrieval_min_score: float = Field(default=0.3, validation_alias="RETRIEVAL_MIN_SCORE")
