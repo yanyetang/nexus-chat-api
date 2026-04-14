@@ -46,8 +46,10 @@ There are three separate LLM roles — each uses a different model/key:
 - 9 parametrized cases from `tests/eval/golden_dataset.json` + 1 standalone no-match test = 10 total
 - Judge LLM uses OpenRouter (`OPENROUTER_API_KEY`) — Groq is intentionally excluded due to free-tier TPM limits failing multi-metric eval
 - `CONFIDENT_API_KEY` sends results to Confident AI platform (used in CI for PR comments)
-- `pytest.ini` sets `addopts = -m "not deepeval"` — always pass `-m deepeval` explicitly when running eval tests, including in CI
-- `deepeval test run` does not override `addopts`, so use `pytest tests/eval -m deepeval` in CI, not `deepeval test run`
+- `pytest.ini` sets `addopts = -m "not deepeval"` to keep eval tests out of normal runs — intentional
+- Upload to Confident AI only happens via `deepeval test run` (CLI calls `wrap_up_test_run` after pytest); plain `pytest` never uploads regardless of `CONFIDENT_API_KEY` or `DEEPEVAL` env var
+- CI command: `deepeval test run tests/eval/test_rag_quality.py -m deepeval -o "addopts="` — `-m deepeval` selects the tests, `-o "addopts="` clears the conflicting ini default
+- Do NOT set `DEEPEVAL=true` with plain `pytest` — it tells `assert_test` to skip upload (expecting CLI to finalize), which then never happens
 
 
 ## DSPy Optimization
