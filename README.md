@@ -211,10 +211,11 @@ Optional:
 
 Optimization and evaluation (offline):
 
-- `GROQ_API_KEY` — DSPy optimizer only (free tier); not used for DeepEval judge
+- `GROQ_API_KEY` — DSPy optimizer only (free tier, preferred for generation); never used for judging
 - `GROQ_OPTIMIZER_MODEL` (default `groq/llama-3.3-70b-versatile`)
-- `OPENROUTER_OPTIMIZER_MODEL` (default `openrouter/google/gemma-4-31b-it:free`) — fallback when no Groq key
-- `OPENROUTER_JUDGE_MODEL` (default `google/gemini-2.0-flash-001`) — required for CI eval; OpenRouter is the only supported judge provider
+- `OPENROUTER_API_KEY` — required for judging (both CI eval and DSPy optimization); also fallback optimizer when no Groq key
+- `OPENROUTER_OPTIMIZER_MODEL` (default `openrouter/google/gemma-4-31b-it:free`) — used when no Groq key
+- `OPENROUTER_JUDGE_MODEL` (default `google/gemini-2.0-flash-001`) — always used for DeepEval scoring regardless of whether Groq is set
 - `CONFIDENT_API_KEY` — sends eval results to Confident AI platform (required for CI PR comments)
 
 ## How DeepEval Works

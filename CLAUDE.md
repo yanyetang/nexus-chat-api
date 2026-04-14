@@ -28,18 +28,18 @@ Use `/pnpm-audit-fix` (manual skill) when audit vulnerabilities are reported.
 
 There are three separate LLM roles — each uses a different model/key:
 
-| Role      | Config key                                            | Default                                  | Used by                              |
-| --------- | ----------------------------------------------------- | ---------------------------------------- | ------------------------------------ |
-| Chat      | `OPENROUTER_CHAT_MODEL`                               | `openai/gpt-4o-mini`                     | Every user message (production)      |
-| Optimizer | `GROQ_OPTIMIZER_MODEL` / `OPENROUTER_OPTIMIZER_MODEL` | `groq/llama-3.3-70b-versatile`           | DSPy MIPROv2 (offline)               |
-| Judge     | `OPENROUTER_JUDGE_MODEL`                              | `google/gemini-2.0-flash-001`            | DeepEval metrics (CI + optimization) |
+| Role      | Config key                                            | Default                                  | Used by                                        |
+| --------- | ----------------------------------------------------- | ---------------------------------------- | ---------------------------------------------- |
+| Chat      | `OPENROUTER_CHAT_MODEL`                               | `openai/gpt-4o-mini`                     | Every user message (production)                |
+| Optimizer | `GROQ_OPTIMIZER_MODEL` / `OPENROUTER_OPTIMIZER_MODEL` | `groq/llama-3.3-70b-versatile`           | DSPy MIPROv2 (offline); Groq preferred         |
+| Judge     | `OPENROUTER_JUDGE_MODEL`                              | `google/gemini-2.0-flash-001`            | DeepEval metrics — CI eval + DSPy optimization |
 
 
 ### Known provider pitfalls
 
 - `openrouter/auto` routes to expensive models (Opus, Sonar) — drains credits fast, do not use
 - Gemini free models have failed DeepEval judge scoring in testing — avoid as judge; paid Gemini (e.g. `google/gemini-2.0-flash-001`) works fine
-- Groq free tier limit is 12K TPM for `llama-3.3-70b-versatile` — DSPy optimizer trials may get 429s but optimization completes with the best successful trial; do not use Groq as DeepEval judge (TPM exhausted by 10 tests × 4 metrics)
+- Groq free tier limit is 12K TPM for `llama-3.3-70b-versatile` — DSPy optimizer trials may get 429s but optimization completes with the best successful trial; Groq is never used as the DeepEval judge (TPM exhausted by 10 tests × 4 metrics — both CI eval and DSPy optimization use OpenRouter for judging)
 
 ## DeepEval
 

@@ -48,20 +48,8 @@ def compile_optimized_pipeline(golden_dataset: list[dict[str, Any]]) -> dict[str
 
     settings = get_settings()
 
-    # Prefer Groq when available (free tier, reliable rate limits)
-    if settings.groq_api_key:
-        api_key = settings.groq_api_key
-        optimizer_model = settings.groq_optimizer_model
-        judge_model = settings.groq_judge_model
-        judge_base_url = _GROQ_BASE_URL
-        lm_api_base = None  # litellm resolves groq/ prefix natively
-    elif settings.openrouter_api_key:
-        api_key = settings.openrouter_api_key
-        optimizer_model = settings.openrouter_optimizer_model
-        judge_model = settings.openrouter_judge_model
-        judge_base_url = _OPENROUTER_BASE_URL
-        lm_api_base = _OPENROUTER_BASE_URL
-    else:
+    # Judge always uses OpenRouter (Groq free-tier TPM is exhausted by multi-metric eval)
+    if not settings.openrouter_api_key:
         return {
             "optimizer": "dspy.MIPROv2",
             "dataset_size": len(golden_dataset),
@@ -69,14 +57,27 @@ def compile_optimized_pipeline(golden_dataset: list[dict[str, Any]]) -> dict[str
             "status": "missing_api_key",
         }
 
-    lm_kwargs: dict[str, Any] = {
-        "api_key": api_key,
-        "cache": True,
-        "temperature": 0.0,
-        "max_tokens": 512,
-    }
-    if lm_api_base:
-        lm_kwargs["api_base"] = lm_api_base
+    judge_model = settings.openrouter_judge_model
+    judge_api_key = settings.openrouter_api_key
+
+    # Optimizer prefers Groq (free tier, fast); falls back to OpenRouter
+    if settings.groq_api_key:
+        optimizer_model = settings.groq_optimizer_model
+        lm_kwargs: dict[str, Any] = {
+            "api_key": settings.groq_api_key,
+            "cache": True,
+            "temperature": 0.0,
+            "max_tokens": 512,
+        }
+    else:
+        optimizer_model = settings.openrouter_optimizer_model
+        lm_kwargs = {
+            "api_key": settings.openrouter_api_key,
+            "api_base": _OPENROUTER_BASE_URL,
+            "cache": True,
+            "temperature": 0.0,
+            "max_tokens": 512,
+        }
 
     dspy.configure(lm=dspy.LM(optimizer_model, **lm_kwargs))
 
@@ -90,7 +91,7 @@ def compile_optimized_pipeline(golden_dataset: list[dict[str, Any]]) -> dict[str
             "status": "judge_not_available",
         }
 
-    judge = OpenRouterJudge(model=judge_model, api_key=api_key, base_url=judge_base_url)
+    judge = OpenRouterJudge(model=judge_model, api_key=judge_api_key, base_url=_OPENROUTER_BASE_URL)
 
     def _metric(example: Any, prediction: Any, trace=None) -> float:  # noqa: ANN001
         del trace
