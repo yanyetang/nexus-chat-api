@@ -49,6 +49,8 @@ jobs:
           fi
 
       - name: Run RAG evaluation suite
+        env:
+          DEEPEVAL: "true"
         run: pytest tests/eval -m deepeval -v -rs
 
       - name: PR summary
