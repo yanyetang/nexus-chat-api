@@ -28,11 +28,11 @@ Use `/pnpm-audit-fix` (manual skill) when audit vulnerabilities are reported.
 
 There are three separate LLM roles — each uses a different model/key:
 
-| Role      | Config key                                            | Default                                  | Used by                                        |
-| --------- | ----------------------------------------------------- | ---------------------------------------- | ---------------------------------------------- |
-| Chat      | `OPENROUTER_CHAT_MODEL`                               | `openai/gpt-4o-mini`                     | Every user message (production)                |
-| Optimizer | `GROQ_OPTIMIZER_MODEL` / `OPENROUTER_OPTIMIZER_MODEL` | `groq/llama-3.3-70b-versatile`           | DSPy MIPROv2 (offline); Groq preferred         |
-| Judge     | `OPENROUTER_JUDGE_MODEL`                              | `google/gemini-2.0-flash-001`            | DeepEval metrics — CI eval + DSPy optimization |
+| Role      | Config key                                            | Default                                                             | Used by                                        |
+| --------- | ----------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------- |
+| Chat      | `OPENROUTER_CHAT_MODEL`                               | `openai/gpt-4o-mini`                                                | Every user message (production)                |
+| Optimizer | `GROQ_OPTIMIZER_MODEL` / `OPENROUTER_OPTIMIZER_MODEL` | `groq/llama-3.3-70b-versatile` (preferred) / `openrouter/openai/gpt-4o-mini` (fallback) | DSPy MIPROv2 (offline)            |
+| Judge     | `OPENROUTER_JUDGE_MODEL`                              | `google/gemini-2.0-flash-001`                                       | DeepEval metrics — CI eval + DSPy optimization |
 
 
 ### Known provider pitfalls
