@@ -1,10 +1,12 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
+  "enabledManagers": ["uv", "github-actions"],
   "schedule": ["every weekend"],
   "packageRules": [
     {
-      "matchManagers": ["python-version"],
+      "matchManagers": ["uv"],
+      "matchDepTypes": ["requires-python"],
       "automerge": false
     },
     {
