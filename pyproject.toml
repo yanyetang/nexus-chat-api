@@ -1,0 +1,29 @@
+[project]
+name = "nexus-chat-api"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "httpx>=0.28.0",
+    "asyncpg>=0.30.0",
+    "pgvector>=0.3.0",
+    "cohere>=5.0.0",
+    "pydantic-settings>=2.7.0",
+    "python-dotenv>=1.0.0",
+    "sse-starlette>=2.0.0",
+    "dspy-ai>=2.5.0",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.0.0",
+    "pip-audit>=2.7.0",
+    "ruff>=0.9.0",
+    "pyright>=1.1.0",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.25.0",
+    "deepeval>=1.3.0",
+    "openai>=1.0.0",
+]
+
