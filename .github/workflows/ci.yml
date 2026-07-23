@@ -13,35 +13,34 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v6
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: "3.14"
-          cache: pip
+          python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -r requirements-dev.txt
+        run: uv sync --group dev
 
       - name: Lint
-        run: ruff check app
+        run: uv run ruff check app
 
       - name: Type check
-        run: pyright --pythonpath "$(which python)" app
+        run: uv run pyright app
 
       - name: Dependency vulnerability scan
         run: >
-          test -z "$(pip-audit -r requirements.txt --format=json 2>/dev/null
+          test -z "$(uv run pip-audit --format=json 2>/dev/null
           | jq '.dependencies[].vulns[].fix_versions[]')"
-          || pip-audit -r requirements.txt
+          || uv run pip-audit
 
       - name: Import smoke test
-        run: python -c "from app.main import app; print('app-loaded')"
+        run: uv run python -c "from app.main import app; print('app-loaded')"
         env:
           DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
           SUPPLIER_API_BASE_URL: https://placeholder.example.com
           COHERE_API_KEY: placeholder
 
       - name: Tests
-        run: pytest tests/ -v -m "not deepeval"
+        run: uv run pytest tests/ -v -m "not deepeval"
         env:
           DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
           SUPPLIER_API_BASE_URL: https://placeholder.example.com

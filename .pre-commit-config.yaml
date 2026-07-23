@@ -3,25 +3,25 @@ repos:
     hooks:
       - id: ruff-check
         name: ruff check
-        entry: .venv/bin/ruff check
+        entry: uv run ruff check
         language: system
         types: [python]
 
       - id: ruff-format
         name: ruff format
-        entry: .venv/bin/ruff format
+        entry: uv run ruff format
         language: system
         types: [python]
 
       - id: pyright
         name: pyright type-check
-        entry: .venv/bin/pyright --pythonpath .venv/bin/python
+        entry: uv run pyright
         language: system
         types: [python]
 
       - id: pytest
         name: pytest
-        entry: .venv/bin/pytest tests/ -q -m "not deepeval"
+        entry: uv run pytest tests/ -q -m "not deepeval"
         language: system
         types: [python]
         pass_filenames: false
