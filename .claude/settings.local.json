@@ -3,7 +3,10 @@
     "allow": [
       "WebFetch(domain:deepeval.com)",
       "mcp__context7__resolve-library-id",
-      "mcp__context7__query-docs"
+      "mcp__context7__query-docs",
+      "WebFetch(domain:www.confident-ai.com)",
+      "Bash(uv --version)",
+      "Bash(uv python *)"
     ]
   }
 }

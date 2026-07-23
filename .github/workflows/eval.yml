@@ -24,15 +24,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Python
-        uses: actions/setup-python@v6
+      - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.14"
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+        run: uv sync --group dev
 
       - name: Report evaluation mode
         run: |
@@ -49,7 +46,7 @@ jobs:
           fi
 
       - name: Run RAG evaluation suite
-        run: deepeval test run tests/eval/test_rag_quality.py -m deepeval -v -o "addopts=" -rs
+        run: uv run deepeval test run tests/eval/test_rag_quality.py -m deepeval -v -o "addopts=" -rs
 
       - name: PR summary
         if: github.event_name == 'pull_request'

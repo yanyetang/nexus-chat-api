@@ -11,24 +11,22 @@ help:
 	@echo "  make clean        - Remove build artifacts and cache"
 
 install:
-	test -x .venv/bin/python || python3 -m venv .venv
-	.venv/bin/pip install -r requirements.txt
-	.venv/bin/pip install -r requirements-dev.txt
+	uv sync --group dev
 
 dev:
-	.venv/bin/uvicorn app.main:app --reload
+	uv run uvicorn app.main:app --reload
 
 test:
-	.venv/bin/pytest tests/ -q
+	uv run pytest tests/ -q
 
 lint:
-	.venv/bin/ruff check app
+	uv run ruff check app
 
 type-check:
-	.venv/bin/pyright --pythonpath .venv/bin/python app
+	uv run pyright app
 
 format:
-	.venv/bin/ruff format app
+	uv run ruff format app
 
 clean:
 	rm -rf .venv __pycache__ .pytest_cache .ruff_cache .pyright
